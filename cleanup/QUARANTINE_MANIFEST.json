@@ -1,0 +1,76 @@
+﻿{
+    "schema_version":  1,
+    "created_at":  "2026-08-06T07:07:00-07:00",
+    "items":  [
+                  {
+                      "original_path":  "<USERPROFILE>\\\\Documents\\\\ZipVoice-Distill TensorRT\\\\__pycache__",
+                      "quarantine_path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-07-00-0700\\__pycache__",
+                      "size_bytes":  1166663,
+                      "sha256":  null,
+                      "reason":  "Compiled Python bytecode cache; quarantine for recovery",
+                      "date":  "2026-08-06T07:07:00-07:00",
+                      "required_review":  true,
+                      "recovery_command":  "Move-Item -LiteralPath \u0027<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-07-00-0700\\\\__pycache__\u0027 -Destination \u0027<USERPROFILE>\\\\Documents\\\\ZipVoice-Distill TensorRT\\\\__pycache__\u0027 -Force"
+                  },
+                  {
+                      "original_path":  "<USERPROFILE>\\\\Documents\\\\ZipVoice-Distill TensorRT\\\\benchmark-results",
+                      "quarantine_path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-07-00-0700\\benchmark-results",
+                      "size_bytes":  1392251,
+                      "sha256":  null,
+                      "reason":  "Generated benchmark outputs and test artifacts; quarantined for recovery",
+                      "date":  "2026-08-06T07:07:00-07:00",
+                      "required_review":  true,
+                      "recovery_command":  "Move-Item -LiteralPath \u0027<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-07-00-0700\\\\benchmark-results\u0027 -Destination \u0027<USERPROFILE>\\\\Documents\\\\ZipVoice-Distill TensorRT\\\\benchmark-results\u0027 -Force"
+                  },
+                  {
+                      "original_path":  "<USERPROFILE>\\\\Documents\\\\ZipVoice-Distill TensorRT\\\\ ; readlink ; done; echo status; grep -E State",
+                      "quarantine_path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-07-00-0700\\ ; readlink ; done; echo status; grep -E State",
+                      "size_bytes":  0,
+                      "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                      "reason":  "Malformed filename file; quarantined",
+                      "date":  "2026-08-06T07:07:00-07:00",
+                      "required_review":  true,
+                      "recovery_command":  "Move-Item -LiteralPath \u0027<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-07-00-0700\\\\ ; readlink ; done; echo status; grep -E State\u0027 -Destination \u0027<USERPROFILE>\\\\Documents\\\\ZipVoice-Distill TensorRT\\\\ ; readlink ; done; echo status; grep -E State\u0027 -Force"
+                  },
+                  {
+                      "original_path":  "<USERPROFILE>\\\\Documents\\\\ZipVoice-Distill TensorRT\\\\=1s=%d",
+                      "quarantine_path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-07-00-0700\\=1s=%d",
+                      "size_bytes":  0,
+                      "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                      "reason":  "Malformed filename file; quarantined",
+                      "date":  "2026-08-06T07:07:00-07:00",
+                      "required_review":  true,
+                      "recovery_command":  "Move-Item -LiteralPath \u0027<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-07-00-0700\\\\=1s=%d\u0027 -Destination \u0027<USERPROFILE>\\\\Documents\\\\ZipVoice-Distill TensorRT\\\\=1s=%d\u0027 -Force"
+                  },
+                  {
+                      "original_path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\runtime\\nvidia_triton\\voices\\.cache-control",
+                      "quarantine_path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-09-32-0700\\.cache-control",
+                      "size_bytes":  0,
+                      "sha256":  null,
+                      "reason":  "Runtime scratch directory; quarantined for recovery",
+                      "date":  "2026-08-06T07:09:32",
+                      "required_review":  true,
+                      "recovery_command":  "Move-Item -LiteralPath \u0027<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-09-32-0700\\.cache-control\u0027 -Destination \u0027<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\runtime\\nvidia_triton\\voices\\.cache-control\u0027 -Force"
+                  },
+                  {
+                      "original_path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\runtime\\nvidia_triton\\voices\\.voice-jobs",
+                      "quarantine_path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-09-32-0700\\.voice-jobs",
+                      "size_bytes":  0,
+                      "sha256":  null,
+                      "reason":  "Runtime scratch directory; quarantined for recovery",
+                      "date":  "2026-08-06T07:09:32",
+                      "required_review":  true,
+                      "recovery_command":  "Move-Item -LiteralPath \u0027<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-09-32-0700\\.voice-jobs\u0027 -Destination \u0027<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\runtime\\nvidia_triton\\voices\\.voice-jobs\u0027 -Force"
+                  },
+                  {
+                      "original_path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\runtime\\nvidia_triton\\voices\\.voice-staging",
+                      "quarantine_path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-09-32-0700\\.voice-staging",
+                      "size_bytes":  0,
+                      "sha256":  null,
+                      "reason":  "Runtime scratch directory; quarantined for recovery",
+                      "date":  "2026-08-06T07:09:32",
+                      "required_review":  true,
+                      "recovery_command":  "Move-Item -LiteralPath \u0027<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\cleanup\\quarantine\\2026-08-06T07-09-32-0700\\.voice-staging\u0027 -Destination \u0027<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\runtime\\nvidia_triton\\voices\\.voice-staging\u0027 -Force"
+                  }
+              ]
+}

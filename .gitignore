@@ -1,0 +1,6 @@
+__pycache__/
+
+# One-time cleanup quarantine and stale full-deployment overlay data.
+cleanup/quarantine/
+runtime/
+*.log

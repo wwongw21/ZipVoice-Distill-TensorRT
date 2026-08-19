@@ -1,0 +1,120 @@
+﻿{
+    "schema_version":  1,
+    "repository_commit":  null,
+    "created_at":  "2026-08-06T07:13:44.0000000-07:00",
+    "items":  [
+                  {
+                      "path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\__pycache__",
+                      "kind":  "directory",
+                      "size_bytes":  1166663,
+                      "sha256":  null,
+                      "reason_code":  "DEL_PROJECT_CACHE",
+                      "reason":  "Generated Python bytecode cache; rebuildable from source Python modules without repository-side configuration changes.",
+                      "evidence":  [
+                                       "Path listing in cleanup/BASELINE.md",
+                                       "No checked-in source file references to cached .pyc objects",
+                                       "Contains only compiled artifacts (pyc)"
+                                   ],
+                      "canonical_replacement":  "Re-run interpreter commands after cleanup",
+                      "recovery":  "Rebuild via normal Python execution in supported runtime commands",
+                      "deleted":  true
+                  },
+                  {
+                      "path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\benchmark-results",
+                      "kind":  "directory",
+                      "size_bytes":  1392251,
+                      "sha256":  null,
+                      "reason_code":  "DEL_TEMPORARY_FILE",
+                      "reason":  "Benchmark outputs and generated media are reproducible from benchmark scripts and not required for runtime behavior.",
+                      "evidence":  [
+                                       "benchmark_standard_template.py default output path points to benchmark-results/standard-template",
+                                       "audio files are produced artifacts under benchmark-results/standard-template-smoke",
+                                       "ab-review.md is a one-off subjective review shell with empty pass/fail matrix"
+                                   ],
+                      "canonical_replacement":  "Re-run benchmark_standard_template.py to recreate outputs",
+                      "recovery":  "Recreate with benchmark_standard_template.py; archive key results externally if needed",
+                      "deleted":  true
+                  },
+                  {
+                      "path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\runtime\\nvidia_triton\\voices\\.cache-control",
+                      "kind":  "directory",
+                      "size_bytes":  0,
+                      "sha256":  null,
+                      "reason_code":  "DEL_TEMPORARY_FILE",
+                      "reason":  "Runtime cache-control state directory is runtime-managed; currently empty and no active process claim required for this baseline snapshot.",
+                      "evidence":  [
+                                       "zipvoice_gui.py creates runtime control paths under VOICES_DIR/.cache-control",
+                                       "pytriton_server.py reads/writes runtime control state under .cache-control",
+                                       "Directory is empty in current snapshot",
+                                       "No active runtime references in running process list during baseline stage"
+                                   ],
+                      "canonical_replacement":  "Runtime server recreates directories as needed",
+                      "recovery":  "Remove directory and launch runtime; it will be recreated during startup",
+                      "deleted":  true
+                  },
+                  {
+                      "path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\runtime\\nvidia_triton\\voices\\.voice-jobs",
+                      "kind":  "directory",
+                      "size_bytes":  0,
+                      "sha256":  null,
+                      "reason_code":  "DEL_TEMPORARY_FILE",
+                      "reason":  "Runtime job queue directory is writable scratch state; empty at baseline.",
+                      "evidence":  [
+                                       "zipvoice_gui.py references runtime VOICE_STORE jobs directory as .voice-jobs",
+                                       "Directory is empty in baseline scan",
+                                       "No required repository manifests depend on this path"
+                                   ],
+                      "canonical_replacement":  "Runtime startup recreates and uses .voice-jobs when needed",
+                      "recovery":  "Delete and allow runtime restart to rebuild",
+                      "deleted":  true
+                  },
+                  {
+                      "path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\runtime\\nvidia_triton\\voices\\.voice-staging",
+                      "kind":  "directory",
+                      "size_bytes":  0,
+                      "sha256":  null,
+                      "reason_code":  "DEL_TEMPORARY_FILE",
+                      "reason":  "Runtime voice-staging directory is runtime scratch space; empty and safe to recreate.",
+                      "evidence":  [
+                                       "zipvoice_gui.py references .voice-staging for staging voice updates",
+                                       "Directory is empty in baseline scan",
+                                       "No source code dependency on persisted contents"
+                                   ],
+                      "canonical_replacement":  "Runtime startup recreates staging directory on demand",
+                      "recovery":  "Delete directory and restart with normal runtime flow",
+                      "deleted":  true
+                  },
+                  {
+                      "path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\ ; readlink ; done; echo status; grep -E State",
+                      "kind":  "file",
+                      "size_bytes":  0,
+                      "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                      "reason_code":  "DEL_TEMPORARY_FILE",
+                      "reason":  "Malformed filename and zero-length artifact likely produced by shell command-line expansion failure; no repository references.",
+                      "evidence":  [
+                                       "git status shows file as untracked command-shaped artifact",
+                                       "No references found in source/scripts/docs for this path",
+                                       "SHA-256 identifies empty file content"
+                                   ],
+                      "canonical_replacement":  null,
+                      "recovery":  "Manual recreation unnecessary; file is empty placeholder",
+                      "deleted":  true
+                  },
+                  {
+                      "path":  "<USERPROFILE>\\Documents\\ZipVoice-Distill TensorRT\\=1s=%d",
+                      "kind":  "file",
+                      "size_bytes":  0,
+                      "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                      "reason_code":  "DEL_TEMPORARY_FILE",
+                      "reason":  "Unrecognized empty filename artifact with script-like token pattern and no references.",
+                      "evidence":  [
+                                       "git status shows untracked artifact",
+                                       "No references in code, tests, scripts, docs, manifests",
+                                       "SHA-256 identifies empty file content"
+                                   ],
+                      "canonical_replacement":  null,
+                      "recovery":  "Safe to delete directly",
+                      "deleted":  true
+                  }
+              ]
+}
