@@ -1,9 +1,28 @@
 # Cleanup Scope
 
-## Repository Root
+> **Historical scope only:** This file records the boundaries used for the
+> 2026-08-06 and 2026-08-19 cleanup operations. It does not authorize any
+> current deletion. Every `Deletion Allowed?` value below is a record of that
+> operation, not standing permission. A new cleanup requires a fresh live
+> inventory, exact paths, current ownership and process checks, and explicit
+> current scope.
+
+## Recorded repository source locations
+
+- Windows launcher repository: `main`, recorded baseline
+  `d9913202eb29d43f9e7fab0d517d5129b269ff74`.
+- Historical records identify the executable Python application as
+  `<HOME>/tts/ZipVoice` in `Ubuntu-24.04`. The live WSL checkout was
+  not verified in the current review; confirm its branch, commit, and Git
+  status before relying on this location as current.
+- Verify the live Windows checkout before relying on the baseline:
+  `git branch --show-current`, `git rev-parse HEAD`, and `git status --short`.
+
+## Historical repository root snapshot (2026-08-06)
 - Exact path: `<USERPROFILE>\Documents\ZipVoice-Distill TensorRT`
-- Current branch: `master`
-- Current commit: `N/A` (repository has no commits yet; only untracked files)
+- Branch recorded then: `master`
+- Commit recorded then: `N/A` (the snapshot reported no commits and only
+  untracked files; this is not the current Git state)
 
 ## Allowed Related Paths
 | Path | Ownership Evidence | Expected Contents | Deletion Allowed? |
