@@ -1,14 +1,38 @@
 # Cleanup Report
 
+> **Historical evidence notice:** This report combines cleanup observations
+> recorded on 2026-08-06 and 2026-08-19. Its paths, process state, sizes,
+> deletion decisions, and validation results are snapshots, not current
+> deletion authority. Before any new cleanup, collect a fresh inventory and
+> obtain an exact current scope.
+>
+> **Current repository note:** At this documentation correction, the Windows
+> repository is on `main` at the recorded baseline
+> `d9913202eb29d43f9e7fab0d517d5129b269ff74`. Verify the live checkout with
+> `git branch --show-current`, `git rev-parse HEAD`, and `git status --short`.
+> Older statements below that the repository had no commits or was entirely
+> untracked describe the earlier snapshot and are not current facts.
+>
+> **Recovery evidence gap:** The listed quarantine locations were emptied or
+> are absent, and some later manifest commands contain literal placeholders
+> such as `<quarantine>` and `<workspace>`. Those commands are retained as
+> historical records only. They are not executable recovery instructions, and
+> the manifests alone do not prove that deleted payloads can currently be
+> restored.
+
 ## Executive summary
-- Baseline inventory completed and all manifested cleanup candidates are now removed from repository paths and marked deleted in manifest.
-- Repository has no resolved commit context in this checkout and is currently entirely untracked.
+- The seven candidates in the 2026-08-06 `cleanup/DELETION_MANIFEST.json`
+  are recorded as removed from repository paths and marked deleted. The later
+  2026-08-19 manifest has separate per-item outcomes, including entries not
+  marked deleted.
+- At the original snapshot, the repository had no resolved commit context and
+  was reported as entirely untracked. This is no longer the current Git state.
 - Candidate cleanup set (7 entries) is fully processed (hard delete executed after quarantine) and marked `deleted=true`.
 
 ## Completion matrix
 | Baseline | Post-cleanup | Reclaim |
 |---|---|---|
-| `2,944,382` bytes (`CLEANUP_REPORT.md`, `cleanup/BASELINE.md`) | `416,812` bytes (repo + cleanup evidence) | `2,527,570` bytes reclaimed (`~2.41 MB`) |
+| `2,944,382` bytes (`cleanup/BASELINE.md`) | `416,812` bytes (measurement used for the reported reclaim calculation) | `2,527,570` bytes reclaimed (`~2.41 MB`) |
 
 | Candidate | Manifest `deleted` | Physical existence now |
 |---|---:|---:|
@@ -19,8 +43,9 @@
 | `runtime/nvidia_triton/voices/.voice-staging/` | true | false |
 | ` ; readlink ; done; echo status; grep -E State` | true | false |
 | `=1s=%d` | true | false |
-- Recovery evidence preserved:
-  - all recovery commands remain in `cleanup/QUARANTINE_MANIFEST.json`
+- Historical recovery-command text is preserved in
+  `cleanup/QUARANTINE_MANIFEST.json`; the referenced payloads are absent, so
+  this text is not current rollback proof.
 
 ## Scope
 - In-scope repository: `C:\Users\William\Documents\ZipVoice-Distill TensorRT`
@@ -31,9 +56,11 @@
 - Baseline snapshot captured in `cleanup/BASELINE.md`.
 - Repository size: `2,944,382` bytes.
 - Largest reclaimable-looking categories observed: `benchmark-results`, `__pycache__`.
-- Post-hard-delete repository size (including remaining `cleanup` evidence): `413,046` bytes.
+- A second post-hard-delete size is recorded as `413,046` bytes. The source
+  notes do not explain whether its scope differs from the `416,812`-byte
+  measurement above, so the exact post-cleanup total is unresolved.
 
-## Canonical architecture
+## Canonical architecture in the recorded snapshot
 - No dedicated manifest or lockfile observed.
 - GUI launch path is `Start ZipVoice GUI.cmd`, which delegates execution into WSL and Docker-backed `zipvoice_bootstrap.py`.
 - No explicit dependency manifest (`pyproject.toml`, lockfile, setup files) was found in this snapshot.
@@ -64,7 +91,8 @@
 
 ## Proposed file moves
 - Generated/runtime-scratch candidates were moved to quarantine and then hard-deleted after manifested stage.
-- Recovery commands remain in `cleanup/QUARANTINE_MANIFEST.json` and are documented for rollback use.
+- Recovery-command text remains in `cleanup/QUARANTINE_MANIFEST.json` as
+  historical documentation, but the absent payloads make it non-executable.
 - `cleanup/quarantine/2026-08-06T07-09-32-0700/` is now emptied and removed after deletion; older quarantine evidence remains tracked in manifest.
 
 ## Proposed deletions
@@ -79,11 +107,14 @@
 - Current deletion manifest state: all 7 entries are now marked `deleted=true`.
 
 ## Quarantine candidates
-- 7 candidates are recorded in `cleanup/QUARANTINE_MANIFEST.json` with recovery commands.
-- Physical quarantine contents were removed after hard-delete; manifest remains as recovery evidence/documentation.
+- 7 candidates are recorded in `cleanup/QUARANTINE_MANIFEST.json` with
+  historical recovery-command text.
+- Physical quarantine contents were removed after hard-delete. The manifest
+  documents intended source and destination paths but does not provide a
+  recoverable payload.
 
 ## Protected items
-- Protected in this stage:
+- Items recorded as protected in the 2026-08-06 stage:
   - `Start ZipVoice GUI.cmd`
   - `Voice Tray.ps1`
   - `cached_tts_client.py`
@@ -95,6 +126,9 @@
   - `runtime/nvidia_triton/voices/voices.json`
   - `runtime/nvidia_triton/voices/voice-ops.sqlite3`
   - `patches/zipvoice-base-trt-profile-2f7326f.patch`
+- The 2026-08-19 manifest later records removal of the stale Windows copies
+  of `voices.json` and `voice-ops.sqlite3`; this list describes the earlier
+  stage, not the later filesystem state.
 
 ## Validation plan
 1. Re-check candidate safety with runtime active-state check and static reference traces. ✅
@@ -117,7 +151,12 @@
 - Restart: launch after shutdown returned health `200` and recreated runtime bootstrap processes.
 - Failure observation: preflight logs included localhost proxy warning (`WSL in NAT mode does not support local proxy`) but did not block launcher from reaching health state.
 
-## Candidate rollback commands
+## Candidate rollback commands (historical, non-executable)
+
+The source paths in the commands below no longer exist. Do not run them as a
+rollback procedure. They are preserved only to show the paths recorded during
+the 2026-08-06 operation.
+
 - `Move-Item -LiteralPath 'C:\Users\William\Documents\ZipVoice-Distill TensorRT\cleanup\quarantine\2026-08-06T07-07-00-0700\__pycache__' -Destination 'C:\Users\William\Documents\ZipVoice-Distill TensorRT\__pycache__' -Force`
 - `Move-Item -LiteralPath 'C:\Users\William\Documents\ZipVoice-Distill TensorRT\cleanup\quarantine\2026-08-06T07-07-00-0700\benchmark-results' -Destination 'C:\Users\William\Documents\ZipVoice-Distill TensorRT\benchmark-results' -Force`
 - `Move-Item -LiteralPath 'C:\Users\William\Documents\ZipVoice-Distill TensorRT\cleanup\quarantine\2026-08-06T07-07-00-0700\ ; readlink ; done; echo status; grep -E State' -Destination 'C:\Users\William\Documents\ZipVoice-Distill TensorRT\ ; readlink ; done; echo status; grep -E State' -Force`
@@ -136,7 +175,10 @@
 - Post-cleanup measured size (including cleanup evidence): `416,812` bytes
 
 ## Risks and unresolved questions
-- No git commit history is available in this checkout; rollback depends on workspace snapshots and preserved manifests.
+- At the original snapshot, no Git commit history was available. The Windows
+  repository now has a recorded `main` baseline at
+  `d9913202eb29d43f9e7fab0d517d5129b269ff74`; verify the live state before
+  relying on it. The preserved manifests do not recreate deleted payloads.
 - Hard-coded WSL paths in launch/runtime scripts may affect portability.
 - Duplicate/inexact version checks are pending before any source-path pruning.
 ## Final stage handoff and closeout
@@ -149,23 +191,40 @@
 
 ### Completion matrix recap
 - Baseline snapshot vs post-cleanup is recorded in `Completion matrix` with reclaim measurement.
-- Candidate outcomes and rollback commands are fully documented in this report.
+- Candidate outcomes and the historical intended rollback paths are documented
+  in this report. Current rollback capability is not proven.
 
 ### Completion conditions check
 - Repository functionality: **Passed** (validated via `Start ZipVoice GUI.cmd` and health/ready endpoints).
 - Candidate inventory consistency: **Passed** (all manifest states and filesystem presence checks match).
-- Recovery evidence: **Passed** (rollback commands preserved in report and manifests).
+- Recovery evidence: **Historical assessment only**. Command text is preserved,
+  but current payload availability and executable rollback are not proven.
 
 ## Troubleshooting note: transient startup/shutdown edge case
 - **Confirmed finding:** one launch attempt failed with `zipvoice_gui.py` container inspection error (`container ... is not running`) after a prior startup path had stale runtime state.
 - **Likely root cause hypothesis:** stale runtime ownership/metadata prevented immediate GUI startup sequencing.
-- **Recovery runbook:**
-  - Run `Voice Tray.ps1 -StopOnly` to stop visible services.
-  - If needed, remove stale ownership record inside WSL:
-    - `wsl.exe -d Ubuntu-24.04 -- rm -f /home/william/.local/state/zipvoice/runtime-ownership.json`
-- Re-run `Start ZipVoice GUI.cmd` and recheck:
-    - `http://127.0.0.1:8020/health`
-    - `http://127.0.0.1:8010/v2/health/ready`
+
+**Recovery runbook:** Treat ownership-record removal as a last-resort state
+repair, not a routine startup step.
+
+1. Run `Voice Tray.ps1 -StopOnly`.
+2. Confirm GUI health at `http://127.0.0.1:8020/health` and readiness at
+   `http://127.0.0.1:8010/v2/health/ready` are both unavailable.
+3. Confirm no ZipVoice GUI or bootstrap process remains and the launcher-owned
+   ZipVoice container is stopped. If any is active, do not remove the record.
+4. Inspect the record at the exact path
+   `/home/william/.local/state/zipvoice/runtime-ownership.json`. Confirm it
+   belongs to the stopped ZipVoice instance and is stale. Do not remove an
+   unreadable, unexpected, differently located, or actively owned record.
+5. Only after those gates pass, remove that exact file inside `Ubuntu-24.04`;
+   do not use a wildcard or remove the parent directory.
+6. Launch `Start ZipVoice GUI.cmd` and verify exactly one GUI/bootstrap
+   instance, GUI health HTTP 200, and runtime readiness HTTP 200.
+7. Run `Voice Tray.ps1 -StopOnly` again and verify the instance is gone, both
+   endpoints are unavailable, and the ownership record is absent.
+8. Restart once more and repeat the single-instance, health, and readiness
+   checks. If any check fails, stop and preserve the record and logs for
+   diagnosis.
 
 ## 2026-08-19 — One-time full-deployment cleanup
 
