@@ -32,18 +32,20 @@
           "line": 234
         }
       ],
-      "evidence": "The End handler sets script:StopRequested=true. On Stop-Service timeout/error it displays Needs attention but never clears that flag. The next 2-second timer tick sees a still-running service, passes StopRequested=true to Get-TrayState, which unconditionally returns Stopping; Set-TrayState disables the End action in that state.",
-      "impact": "After a failed shutdown, the tray returns to Stopping and disables retrying End although no shutdown is in progress; user must use another control/restart the monitor to retry.",
-      "recommendation": "Clear StopRequested on failed shutdown or derive Stopping from ShutdownInProgress, preserving an enabled retry action when an error leaves the service running.",
-      "validation": "Static trace of End catch -> timer tick -> Get-TrayState -> Set-TrayState; Windows PowerShell/WinForms and WSL were unavailable, so no live reproduction or built-in -SelfCheck executed.",
+      "evidence": "End sets script:StopRequested=true. After Stop-Service times out or throws, the catch displays Needs attention but leaves the flag set. If the health/backend/process Running predicate stays true, the next timer tick maps the latched flag to Stopping and disables End. If those checks are false, Should-ExitMonitor can close the tray because StopRequested is true even when an expected port or ownership record remains; the timer exit decision does not include those residual checks.",
+      "impact": "A failed shutdown can leave the tray stuck in Stopping with retry disabled, or close the tray while an expected port or ownership record remains. Both outcomes hide an unresolved shutdown failure and remove the normal retry control.",
+      "recommendation": "Track unresolved shutdown failure separately from stop intent and the active-shutdown guard. Keep the tray visible in Needs attention with End enabled after a failed check. Exit only after a retry verifies the exact GUI process, health/readiness endpoints, expected ports and ownership record are all gone.",
+      "validation": "Static trace of the End catch, timer tick, Get-TrayState, Set-TrayState and Should-ExitMonitor paths. The pinned source confirms both the running-service state and the residual-only exit path. Windows PowerShell/WinForms and the actual WSL deployment were not available for live acceptance.",
       "disposition": "Act on",
       "title": "Failed shutdown leaves the tray stuck in Stopping with retry disabled",
       "source_sha": "96d641298cfce10ad9af44c4f900c608626868a9",
-      "source_url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L266"
+      "source_url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L266",
+      "trigger": "End is clicked and Stop-Service throws or reaches its failure deadline; the next tick either sees the application still running or sees only a residual expected port/ownership record after health, backend readiness and exact GUI process checks are false."
     }
   ],
   "tests": [
-    "Inspected all 2 executable tracked script files; no repository files modified"
+    "Original source review inspected both executable tracked files at the pinned main commit; no launcher or application runtime source changed.",
+    "Handoff-document validation is recorded under handoff.verification.recorded. Native Windows and WSL acceptance remain NOT RUN."
   ],
   "limitations": [
     "Linux environment cannot execute cmd, Windows PowerShell, WinForms, Docker Desktop or user's Ubuntu-24.04 WSL deployment",
@@ -92,7 +94,7 @@
     "schema_version": 1,
     "repository": "wwongw21/ZipVoice-Distill-TensorRT",
     "visibility": "public",
-    "status": "HANDOFF ONLY — FINDING OPEN; REPAIR PROPOSED",
+    "status": "HANDOFF ONLY \u2014 FINDING OPEN; REPAIR PROPOSED",
     "audience": [
       "Maintainer of the Windows launcher and tray",
       "Implementation agent adding a narrow failure-state correction",
@@ -109,7 +111,7 @@
           "role": "Current pinned Windows launcher package"
         }
       ],
-      "project_changes": "None",
+      "project_changes": "Documentation only: docs/reviews/2026-10-22/HANDOFF.md and report.json. No launcher or application runtime source changed.",
       "external_writes": "None",
       "root_review_artifact": "/workspace/review/zipvoice.json",
       "evidence_boundary": "This repository is a Windows launcher/evidence package. The name does not mean its current tree contains the TensorRT Python application."
@@ -283,7 +285,7 @@
       "control_flow": [
         "User launches CMD -> WSL bootstrap prepare -> reuse existing health/process or prepare Docker/WSL -> establish ownership lease if missing -> launch bootstrap exec -> start tray -> poll /health -> open Edge",
         "Tray timer -> test GUI health/readiness and backend/process -> derive Starting/Running/Needs attention/Stopping -> update actions",
-        "End -> set StopRequested -> Stop-Service -> interrupt exact managed GUI -> close managed Edge -> verify process/health/ports/ownership gone -> exit on success or display error on failure"
+        "End -> set StopRequested -> Stop-Service -> interrupt exact managed GUI -> close managed Edge -> verify process/health/ports/ownership gone. A failed check shows an error; the current timer can still close the tray on its next tick if its health/backend/process Running predicate is false, even when a port or ownership record remains."
       ],
       "state_ownership": [
         {
@@ -332,7 +334,8 @@
       "unverified": [
         "Live WSL checkout, remote, commit, local changes and presence/version of bootstrap/GUI",
         "Actual container/image and runtime ownership record contents/validation behavior",
-        "Current model/engine builds, Docker Desktop/WSL integration and installed Windows Edge/PowerShell behavior"
+        "Current model/engine builds, Docker Desktop/WSL integration and installed Windows Edge/PowerShell behavior",
+        "Active WSL Python environment and actual unittest suite/import layout"
       ],
       "next_read_only_inventory": [
         {
@@ -459,8 +462,8 @@
             "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
           }
         ],
-        "trigger": "End is clicked, Stop-Service throws or reaches its failure deadline, and the GUI/backend remains observable as running on the next timer tick.",
-        "evidence": "End sets script:StopRequested=true. The catch sets Needs attention without resetting the flag. Timer passes StopRequested to Get-TrayState; true immediately returns Stopping. Set-TrayState disables End for Stopping.",
+        "trigger": "End is clicked and Stop-Service throws or reaches its failure deadline; the next tick either sees the application still running or sees only a residual expected port/ownership record after health, backend readiness and exact GUI process checks are false.",
+        "evidence": "End sets script:StopRequested=true. After Stop-Service times out or throws, the catch displays Needs attention but leaves the flag set. If the health/backend/process Running predicate stays true, the next timer tick maps the latched flag to Stopping and disables End. If those checks are false, Should-ExitMonitor can close the tray because StopRequested is true even when an expected port or ownership record remains; the timer exit decision does not include those residual checks.",
         "source_derived_transition": [
           {
             "step": "Before click",
@@ -489,40 +492,53 @@
             "ShutdownInProgress": false,
             "state": "Stopping",
             "End_enabled": false
+          },
+          {
+            "step": "Timer tick after failed Stop-Service sees only an expected open port or the ownership record; health, readiness, backend readiness and exact GUI process checks are false",
+            "StopRequested": true,
+            "ShutdownInProgress": false,
+            "Running": false,
+            "shutdown_checks_passed": false,
+            "current_result": "Should-ExitMonitor returns true and the tray closes",
+            "required_result": "Needs attention remains visible; End stays enabled; shutdown is not reported complete"
           }
         ],
-        "impact": "The normal retry control is disabled after a failure although no shutdown call remains active. The error balloon and brief Needs attention state are overwritten by the monitor.",
+        "impact": "A failed shutdown can leave the tray stuck in Stopping with retry disabled, or close the tray while an expected port or ownership record remains. Both outcomes hide an unresolved shutdown failure and remove the normal retry control.",
         "change_surface": [
           "Voice Tray.ps1: End click handler, persistent error/intent state, timer Get-TrayState input and Set-TrayState action policy",
           "Voice Tray.ps1 -SelfCheck or a separate Windows test harness for failure->tick->retry; keep tests local and mocked"
         ],
         "repair_steps": [
-          "Define separate meanings for requested stop, active shutdown, and failed shutdown. Avoid using a permanently latched intent as the active-operation indicator.",
-          "On failed Stop-Service, reset the active/requested state as needed for retry and retain an error/Needs attention condition until acknowledged/retried or resolved.",
-          "Make the next timer tick preserve an actionable failure state while the runtime still runs; allow another End action once ShutdownInProgress is false.",
-          "Keep the existing ShutdownInProgress guard to prevent overlapping shutdown calls and preserve the monitor's successful-stop exit policy.",
-          "Extend state tests to invoke a fake failing shutdown and then the same timer decision path; test a second successful attempt.",
+          "Define separate state for requested stop, active shutdown and unresolved failed shutdown. Do not use a latched stop intent as the active-operation indicator.",
+          "On failed Stop-Service, reset active/requested state as needed for retry and retain the error state.",
+          "Keep the next timer tick actionable while the runtime still runs; allow another End action when ShutdownInProgress is false.",
+          "Keep unresolved shutdown failure separate from StopRequested and ShutdownInProgress. Do not close the monitor just because health/backend/process checks are false while expected ports or the ownership record remain.",
+          "After retry, close the monitor only when exact GUI process, health/readiness endpoints, all expected ports and the ownership record are gone. Preserve the never-started monitor timeout.",
+          "Test the same mocked timer path for a running service, a port-only residue and an ownership-record-only residue; then test a successful retry.",
           "Validate the narrow change on Windows PowerShell/WinForms, then on an isolated verified owned WSL deployment."
         ],
         "invariants": [
           "End is disabled only while an actual shutdown is in progress, not indefinitely after an error.",
-          "A failed stop remains visible/actionable through subsequent timer ticks.",
+          "A failed stop remains visible and actionable through later timer ticks, including when only an expected port or the ownership record remains.",
           "Two concurrent stop operations are not started.",
-          "A successful shutdown still verifies process, health/readiness, ports and ownership lease removal before reporting completion.",
+          "A failed stop does not close the monitor while any expected shutdown check remains. A successful shutdown verifies the exact process, health/readiness, ports and ownership lease removal before reporting completion and closing the monitor.",
           "Tray controls stop only the managed GUI/application path; do not introduce broad process termination or named-container stops.",
           "Closing/reopening the dedicated Edge app does not target unrelated browser profiles."
         ],
         "acceptance": [
-          "Mock Stop-Service failure with health/background still running: immediately after catch and after at least two timer ticks, state is Needs attention and End remains enabled.",
-          "A second End click actually invokes Stop-Service again; on success monitor exits normally.",
+          "Mock Stop-Service failure with health/background still running: immediately after catch and after at least two timer ticks, the tray remains visible in Needs attention and End remains enabled.",
+          "Mock a residual-port-only failure: health, readiness, backend readiness and exact GUI process are false; one expected port (test each expected port in turn) remains open and all other shutdown checks pass. After the catch and at least two timer ticks, the tray remains visible in Needs attention, End stays enabled and shutdown is not reported complete.",
+          "Mock an ownership-record-only failure: health, readiness, backend readiness and exact GUI process are false; all expected ports are closed but the ownership record remains. After the catch and at least two timer ticks, the tray remains visible in Needs attention, End stays enabled and shutdown is not reported complete.",
+          "A second End click invokes Stop-Service again. If all process, endpoint, port and ownership checks pass, the monitor exits; if any residual check still fails, it stays visible and reports the remaining check.",
           "While fake Stop-Service is in progress, End remains disabled and duplicate invocation is rejected.",
-          "Original startup timeout, never-started monitor, health-but-unready state and successful-stop exit behavior still pass.",
-          "An error balloon/message explains the failure without being contradicted by a permanently spinning Stopping label."
+          "The existing never-started startup timeout, health-but-unready state and successful-stop exit behavior still pass.",
+          "An error balloon/message explains the failure without being contradicted by a permanently spinning Stopping label or a monitor that closes with residual resources."
         ],
         "regression_scenarios": [
           "Shutdown timeout while GUI health stays 200",
           "Native WSL command failure before interrupt is delivered",
-          "GUI process gone but backend/port/ownership checks still prevent completed shutdown",
+          "GUI process, health, readiness and backend checks gone while one expected port remains open; monitor stays visible and retry remains available",
+          "GUI process, health, readiness, backend and port checks gone while ownership record remains; monitor stays visible and retry remains available",
           "Successful first shutdown",
           "Failure followed by a successful retry",
           "Failure followed by spontaneous runtime exit",
@@ -530,13 +546,13 @@
           "Existing startup, ready/unready and monitor exit cases in -SelfCheck"
         ],
         "risks": [
-          "StopRequested also participates in Should-ExitMonitor, so changing its lifecycle can affect monitor exit timing; inspect both uses.",
+          "StopRequested also participates in Should-ExitMonitor, so changing its lifecycle can affect monitor exit timing; track failure state separately and test both exit paths.",
           "A simplistic state reset can replace Needs attention with Running on the next poll despite unresolved shutdown verification; preserve error visibility intentionally.",
           "Live stop/retry tests act on a real runtime; use a verified disposable owned instance and avoid unrelated containers or user data."
         ],
         "rollback": "Revert only the tray state correction if native lifecycle behavior regresses. Retain normal -StopOnly as the documented managed control where ownership is verified; preserve all user/deployment data.",
         "reproduction": {
-          "status": "SOURCE TRACE ONLY — LIVE REPRODUCTION NOT RUN",
+          "status": "SOURCE TRACE ONLY \u2014 LIVE REPRODUCTION NOT RUN",
           "prerequisites_for_source_review": [
             "Pinned Voice Tray.ps1 at 96d641298cfce10ad9af44c4f900c608626868a9"
           ],
@@ -545,13 +561,14 @@
           "native_reproduction_procedure": [
             "On Windows, run the tray in a local test harness whose shutdown call is mocked to throw and whose health/background predicate remains true.",
             "Invoke End and advance the timer handler at least once.",
-            "Observe the original code's Needs attention -> Stopping transition and disabled End; no actual WSL processes or containers should be stopped by this fixture."
+            "Observe the original code's Needs attention -> Stopping transition and disabled End while running checks stay true. In separate mocked cases, make only a port remain and only the ownership record remain after health/readiness/backend/process checks turn false; the original timer closes the tray. No actual WSL processes or containers should be stopped by these fixtures."
           ],
           "proposed_native_command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \".\\Voice Tray.ps1\" -SelfCheck",
           "native_command_caveat": "Current -SelfCheck does not contain the End-failure/timer fixture; extend it or run an explicit test harness before claiming this regression is tested.",
           "live_runtime_steps": "Only after source/state tests pass and deployment identity is established, validate a controlled failed shutdown and successful retry on an isolated owned WSL instance.",
           "limits": "Neither powershell.exe/pwsh nor WinForms, cmd.exe, Docker Desktop or the user's WSL runtime were available here."
-        }
+        },
+        "acceptance_status": "PROPOSED; NOT RUN"
       }
     ],
     "verification": {
@@ -571,6 +588,12 @@
           "name": "Readme/runtime relationship",
           "status": "RAN BEFORE HANDOFF",
           "result": "README identifies this repository as a launcher package. The runtime source named by the launcher is not included here; integration compatibility remains unverified."
+        },
+        {
+          "name": "Handoff documentation checks",
+          "command": "Portable docs validation: parse report.json; check handoff/JSON consistency and pinned source trace; compile the embedded unittest template and verify zero-case failure plus one-case success with a synthetic fixture; run git diff --check.",
+          "status": "RAN DURING DOCUMENTATION UPDATE",
+          "result": "PASS. Both handoff artifacts agree on proposed acceptance and NOT RUN status; report JSON parses; the residual-exit trace matches the pinned source; the template rejects zero collected tests and passes a synthetic one-case fixture; only HANDOFF.md and report.json changed. This did not run the application suite or native Windows/WSL acceptance, which remain NOT RUN."
         }
       ],
       "native_checks_not_run": [
@@ -610,32 +633,41 @@
           "environment": "Windows Forms test harness first; isolated WSL deployment second",
           "command": "No ready-made command currently exists for the mocked End-failure fixture; implementation must add and document it before execution.",
           "status": "NOT RUN",
-          "expected_after_repair": "Needs attention persists with End enabled after failure; second attempt runs; no broad pkill/container-stop workaround."
+          "expected_after_repair": "Needs attention remains visible with End enabled after failure, including port-only and ownership-record-only residue; a later retry exits only after every shutdown check passes. No broad pkill/container-stop workaround."
         },
         {
           "name": "WSL application test suite",
-          "environment": "Only after inspecting the current checkout and its tests",
-          "command": "wsl.exe -d Ubuntu-24.04 -- /home/william/.local/state/zipvoice/host-envs/current/bin/python -B -m unittest discover",
+          "environment": "Only after the actual WSL checkout identity, current branch/SHA/worktree status, expected bootstrap/GUI files, active Python interpreter and unittest layout have been inspected.",
           "status": "NOT RUN",
-          "caveat": "This command is recorded in launcher README; actual environment path, suite contents and output effects remain unverified. Do not treat it as a test that ran."
+          "command_template": "Use the inspection-gated template under 'WSL application test prerequisites' in HANDOFF.md. It changes to ZIPVOICE_REPO, passes explicit absolute ZIPVOICE_TEST_START and ZIPVOICE_TEST_TOP paths to unittest discovery, and exits with an error when zero cases are collected.",
+          "historical_readme_command": "The README records an absolute interpreter invocation followed by -B -m unittest discover; that command is historical evidence only and is insufficient as an acceptance command.",
+          "prerequisites": [
+            "Confirm the actual checkout root and sanitized project/remote identity, branch, commit, worktree state and required bootstrap/GUI files on the deployment host.",
+            "Confirm the selected Python interpreter exists, is executable and belongs to the active deployment environment.",
+            "Inspect actual test modules and imports, then set absolute TEST_START and TEST_TOP directories inside the verified checkout. Do not guess a suite path or rely on the shell's starting directory.",
+            "Collect at least one unittest case; zero cases must fail the command rather than count as a pass."
+          ],
+          "expected_after_repair": "The intended suite is discovered from explicit directories, at least one test case is collected and all collected tests pass.",
+          "caveat": "The actual private WSL runtime checkout, interpreter and suite layout were not identified or inspected here. Do not infer them from paths recorded by the launcher or README."
         }
       ],
-      "completion_boundary": "Finding remains OPEN. This handoff does not claim a native reproduction, implemented fix, tested deployment or release approval."
+      "completion_boundary": "Finding remains OPEN. Acceptance criteria are proposed and NOT RUN. This handoff does not claim a native reproduction, runtime fix, identified WSL deployment, tested application suite or release approval."
     },
     "limitations": [
       "Linux workspace cannot validate Windows PowerShell/WinForms event scheduling, process matching, Edge activation or WSL/Docker Desktop integration.",
       "Actual runtime GUI/bootstrap/ownership implementation was not supplied in this repository; lifecycle compatibility remains unverified.",
       "Historical cleanup records were reviewed as records only; no cleanup or deletion was attempted.",
-      "The source-supported failure-state finding is narrower than a complete release qualification; all native checks remain NOT RUN."
+      "The source-supported failure-state finding is narrower than a complete release qualification; all native checks remain NOT RUN.",
+      "The actual WSL application checkout, active interpreter and test layout were not inspected; application-suite testing remains NOT RUN."
     ]
   },
   "handoff_date": "2026-10-22",
   "all_findings_status": "OPEN",
-  "implementation_status": "No repairs applied; proposed work only.",
+  "implementation_status": "No runtime repairs applied; the handoff documentation alone was clarified.",
   "delivery_notes": {
     "destination_repository": "wwongw21/ZipVoice-Distill-TensorRT",
-    "status": "All findings remain OPEN; documentation transfer only.",
-    "portable_evidence": "This JSON retains the complete repository-specific handoff. Historical /workspace paths are evidence references and prerequisites, not portable hyperlinks. Applicable repository-specific diagnostics are included alongside the report.",
+    "status": "All runtime findings remain OPEN; documentation-only review clarifications.",
+    "portable_evidence": "This JSON retains the complete repository-specific handoff. Historical workspace paths are evidence references and prerequisites, not portable hyperlinks. The WSL test template requires the actual checkout and suite layout to be verified before use.",
     "diagnostics_included": [],
     "not_included": "Original environments, model weights, user data and complete source snapshots are not included. Clone the pinned source and follow the recorded prerequisites. Bug-demonstration scripts intentionally assert pre-fix behavior; they are not a post-fix passing suite.",
     "public_scope": "Only public launcher-repository evidence is included. Separate runtime source details and cross-repository diagnostics are excluded."

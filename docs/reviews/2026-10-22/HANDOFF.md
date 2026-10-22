@@ -1,6 +1,6 @@
 # ZipVoice-Distill-TensorRT engineering handoff
 
-Review date: **22 October 2026**. All findings remain **OPEN**. This handoff contains proposed repairs and release checks; no source fixes or new runtime acceptance are claimed.
+Review date: **22 October 2026**. All findings remain **OPEN**. This handoff contains proposed repairs and release checks; no source fixes or new runtime acceptance are claimed. This documentation update makes the failed-shutdown acceptance criteria and WSL test prerequisites explicit.
 
 **Reviewed source:** [`main` at `96d641298cfce10ad9af44c4f900c608626868a9`](https://github.com/wwongw21/ZipVoice-Distill-TensorRT/tree/96d641298cfce10ad9af44c4f900c608626868a9).
 
@@ -506,7 +506,7 @@ README.md
 
 2. Tray timer -> test GUI health/readiness and backend/process -> derive Starting/Running/Needs attention/Stopping -> update actions
 
-3. End -> set StopRequested -> Stop-Service -> interrupt exact managed GUI -> close managed Edge -> verify process/health/ports/ownership gone -> exit on success or display error on failure
+3. End -> set StopRequested -> Stop-Service -> interrupt exact managed GUI -> close managed Edge -> verify process/health/ports/ownership gone. A failed check shows an error; the current timer can still close the tray on its next tick if its health/backend/process Running predicate is false, even when a port or ownership record remains.
 
 ### State ownership
 
@@ -702,6 +702,71 @@ NOT RUN; liveness response alone does not establish application identity/ownersh
 
 Read inventory before relating proposed launcher fixes to a deployed backend. Preserve unrelated processes, containers, models, voices, databases and generated audio. Historical cleanup manifests do not authorize new deletion or cleanup.
 
+### WSL application test prerequisites
+
+The launcher and README record a WSL checkout location and Python interpreter, but the application checkout is not included here. Treat those recorded values as candidates only. Before running its tests on the actual WSL host, confirm the checkout root and sanitized remote/project identity, branch, commit and worktree status; confirm the expected bootstrap and GUI files; and confirm the interpreter exists, is executable and belongs to the deployment's active environment. Do not claim a deployment was identified until those checks have been read on that host. Keep local checkout paths and any credential-bearing remote URL out of shared logs.
+
+Then inspect the checkout for its real `unittest` suite and import layout. Set `ZIPVOICE_REPO`, `ZIPVOICE_PYTHON`, `ZIPVOICE_TEST_START` and `ZIPVOICE_TEST_TOP` from that inspection. The two test directories must be absolute paths inside the verified checkout; `ZIPVOICE_TEST_START` must contain the discovered test modules, and `ZIPVOICE_TEST_TOP` must be their import root. Do not assume the shell starts in the application checkout, or guess `.` / `tests/` when the layout is unknown.
+
+Run this template inside the verified WSL distribution after setting those four values. It changes to the verified checkout, passes explicit discovery paths to `unittest`, and exits with an error when discovery finds zero test cases:
+
+```bash
+set -euo pipefail
+: "${ZIPVOICE_REPO:?Set this to the verified application checkout}"
+: "${ZIPVOICE_PYTHON:?Set this to the verified runtime interpreter}"
+: "${ZIPVOICE_TEST_START:?Set this from the inspected test layout}"
+: "${ZIPVOICE_TEST_TOP:?Set this from the inspected import layout}"
+test -x "$ZIPVOICE_PYTHON"
+test -d "$ZIPVOICE_TEST_START"
+test -d "$ZIPVOICE_TEST_TOP"
+test "$(realpath "$ZIPVOICE_REPO")" = "$(git -C "$ZIPVOICE_REPO" rev-parse --show-toplevel)"
+git -C "$ZIPVOICE_REPO" remote get-url origin
+git -C "$ZIPVOICE_REPO" branch --show-current
+git -C "$ZIPVOICE_REPO" rev-parse HEAD
+git -C "$ZIPVOICE_REPO" status --short
+test -f "$ZIPVOICE_REPO/zipvoice_bootstrap.py"
+test -f "$ZIPVOICE_REPO/zipvoice_gui.py"
+cd "$ZIPVOICE_REPO"
+"$ZIPVOICE_PYTHON" -B - "$ZIPVOICE_REPO" "$ZIPVOICE_TEST_START" "$ZIPVOICE_TEST_TOP" <<'PY'
+from pathlib import Path
+import sys
+import unittest
+
+repo, start, top = (Path(value) for value in sys.argv[1:])
+if not all(path.is_absolute() for path in (repo, start, top)):
+    raise SystemExit("ERROR: checkout and unittest discovery directories must be absolute")
+repo, start, top = (path.resolve() for path in (repo, start, top))
+
+def is_within(parent, child):
+    try:
+        child.relative_to(parent)
+        return True
+    except ValueError:
+        return False
+
+if not all(path.is_dir() for path in (repo, start, top)):
+    raise SystemExit("ERROR: checkout or explicit unittest discovery directory is missing")
+if not is_within(repo, start) or not is_within(repo, top) or not is_within(top, start):
+    raise SystemExit("ERROR: unittest discovery directories must be inside the checkout, with TEST_TOP above TEST_START")
+
+suite = unittest.defaultTestLoader.discover(
+    start_dir=str(start), top_level_dir=str(top)
+)
+
+def count_cases(items):
+    return sum(count_cases(item) if isinstance(item, unittest.TestSuite) else 1 for item in items)
+
+count = count_cases(suite)
+if count == 0:
+    raise SystemExit("ERROR: unittest discovery collected zero test cases")
+print(f"Collected {count} test cases")
+result = unittest.TextTestRunner(verbosity=2).run(suite)
+raise SystemExit(0 if result.wasSuccessful() else 1)
+PY
+```
+
+The bare `python -m unittest discover` command in the README is historical evidence only. An absolute interpreter path does not set the working directory or discovery roots, and default discovery can report success after collecting zero tests. This template remains unrun until the actual checkout, interpreter and suite layout are verified.
+
 ## Mitigations
 
 ### Item 1
@@ -850,15 +915,15 @@ Strongly supported by source state transition; not reproduced on Windows
 
 #### Observed mechanism
 
-The End handler sets script:StopRequested=true. On Stop-Service timeout/error it displays Needs attention but never clears that flag. The next 2-second timer tick sees a still-running service, passes StopRequested=true to Get-TrayState, which unconditionally returns Stopping; Set-TrayState disables the End action in that state.
+The End handler sets script:StopRequested=true. On Stop-Service timeout/error it displays Needs attention but never clears that flag. If the health/backend/process Running predicate remains true, the next 2-second timer tick passes StopRequested=true to Get-TrayState, which returns Stopping; Set-TrayState disables End. If those Running checks are false, Should-ExitMonitor can close the tray because StopRequested is true, even when Stop-Service failed only because an expected port or the ownership record remains. The monitor does not currently use those residual checks in its exit decision.
 
 #### Impact and scope
 
-After a failed shutdown, the tray returns to Stopping and disables retrying End although no shutdown is in progress; user must use another control/restart the monitor to retry.
+After a failed shutdown, the tray either returns to Stopping and disables End while the application still appears to run, or closes while residual ports or the ownership record remain. In both cases the normal retry path is lost even though the shutdown checks did not all pass.
 
 #### Repair direction
 
-Clear StopRequested on failed shutdown or derive Stopping from ShutdownInProgress, preserving an enabled retry action when an error leaves the service running.
+Track an unresolved shutdown failure separately from StopRequested and ShutdownInProgress. Keep the tray in Needs attention and End enabled when no stop call is active. Do not close the monitor after a failed check until a retry verifies that the exact GUI process, health/readiness endpoints, expected ports and ownership record are all gone.
 
 #### Verification already obtained
 
@@ -982,11 +1047,11 @@ Voice Tray.ps1
 
 #### Trigger
 
-End is clicked, Stop-Service throws or reaches its failure deadline, and the GUI/backend remains observable as running on the next timer tick.
+End is clicked and Stop-Service throws or reaches its failure deadline. Cover both a still-running application on the next timer tick and the residual-only case where the GUI/process and health/backend checks are gone but an expected port or ownership record remains.
 
 #### Detailed handoff evidence
 
-End sets script:StopRequested=true. The catch sets Needs attention without resetting the flag. Timer passes StopRequested to Get-TrayState; true immediately returns Stopping. Set-TrayState disables End for Stopping.
+End sets script:StopRequested=true. The catch sets Needs attention without resetting that flag. When the health/backend/process checks still indicate Running, the timer passes StopRequested to Get-TrayState, which returns Stopping and disables End. In the residual-only case, those checks say not running, so Should-ExitMonitor returns true because StopRequested is latched and closes the tray. Stop-Service's port and ownership checks can still have failed; the monitor exit path does not consult them.
 
 #### Source derived transition
 
@@ -1078,9 +1143,31 @@ Stopping
 
 false
 
+##### Item 5
+
+###### Step
+
+Failed stop leaves only an expected port open or the ownership record present; health, readiness, backend readiness and exact GUI process checks are false
+
+###### Stoprequested
+
+true
+
+###### Shutdowninprogress
+
+false
+
+###### Current monitor result
+
+Closed on the next timer tick because Running is false and StopRequested is true
+
+###### Required result
+
+Needs attention remains visible; End stays enabled; shutdown is not reported complete
+
 #### Detailed handoff impact
 
-The normal retry control is disabled after a failure although no shutdown call remains active. The error balloon and brief Needs attention state are overwritten by the monitor.
+After a failed stop, the error can be replaced by Stopping with End disabled, or the monitor can close if only residual resources remain. Both outcomes hide an unresolved failure and block the normal retry action.
 
 #### Change surface
 
@@ -1096,37 +1183,43 @@ The normal retry control is disabled after a failure although no shutdown call r
 
 3. Make the next timer tick preserve an actionable failure state while the runtime still runs; allow another End action once ShutdownInProgress is false.
 
-4. Keep the existing ShutdownInProgress guard to prevent overlapping shutdown calls and preserve the monitor's successful-stop exit policy.
+4. Keep an unresolved shutdown-failure state separate from StopRequested and ShutdownInProgress. While failure remains unresolved, do not close the monitor just because health/backend/process checks are false; residual ports or ownership records still mean shutdown verification failed.
 
-5. Extend state tests to invoke a fake failing shutdown and then the same timer decision path; test a second successful attempt.
+5. Close the monitor after a retry only when the existing full shutdown checks pass: exact GUI process gone, health/readiness endpoints gone, expected ports closed and ownership record gone. Preserve the existing never-started monitor timeout.
 
-6. Validate the narrow change on Windows PowerShell/WinForms, then on an isolated verified owned WSL deployment.
+6. Extend state tests to invoke a fake failing shutdown and then the same timer decision path; test both a running service and residual-only failures (port-only and ownership-record-only), then test a successful retry.
+
+7. Validate the narrow change on Windows PowerShell/WinForms, then on an isolated verified owned WSL deployment.
 
 #### Invariants
 
 1. End is disabled only while an actual shutdown is in progress, not indefinitely after an error.
 
-2. A failed stop remains visible/actionable through subsequent timer ticks.
+2. A failed stop remains visible/actionable through subsequent timer ticks, including when only expected ports or the ownership record remain.
 
 3. Two concurrent stop operations are not started.
 
-4. A successful shutdown still verifies process, health/readiness, ports and ownership lease removal before reporting completion.
+4. A failed stop does not close the monitor while any expected shutdown check remains. A successful shutdown verifies process, health/readiness, ports and ownership lease removal before reporting completion and closing the monitor.
 
 5. Tray controls stop only the managed GUI/application path; do not introduce broad process termination or named-container stops.
 
 6. Closing/reopening the dedicated Edge app does not target unrelated browser profiles.
 
-#### Acceptance
+#### Proposed acceptance (NOT RUN)
 
-1. Mock Stop-Service failure with health/background still running: immediately after catch and after at least two timer ticks, state is Needs attention and End remains enabled.
+1. Mock Stop-Service failure with health/background still running: immediately after catch and after at least two timer ticks, the tray remains visible in Needs attention and End remains enabled.
 
-2. A second End click actually invokes Stop-Service again; on success monitor exits normally.
+2. Mock a residual-port-only failure: health, readiness, backend readiness and exact GUI process are false; one expected port (test each expected port in turn) remains open and all other shutdown checks pass. Immediately after the catch and after at least two timer ticks, the tray remains visible in Needs attention, End stays enabled and shutdown is not reported complete.
 
-3. While fake Stop-Service is in progress, End remains disabled and duplicate invocation is rejected.
+3. Mock an ownership-record-only failure: health, readiness, backend readiness and exact GUI process are false; all expected ports are closed but the ownership record remains. Immediately after the catch and after at least two timer ticks, the tray remains visible in Needs attention, End stays enabled and shutdown is not reported complete.
 
-4. Original startup timeout, never-started monitor, health-but-unready state and successful-stop exit behavior still pass.
+4. A second End click invokes Stop-Service again. If all process, endpoint, port and ownership checks pass, the monitor exits; if any residual check still fails, it stays visible and reports the remaining check.
 
-5. An error balloon/message explains the failure without being contradicted by a permanently spinning Stopping label.
+5. While fake Stop-Service is in progress, End remains disabled and duplicate invocation is rejected.
+
+6. The existing never-started startup timeout, health-but-unready state and successful-stop exit behavior still pass.
+
+7. An error balloon/message explains the failure without being contradicted by a permanently spinning Stopping label or a monitor that closes with residual resources.
 
 #### Regression scenarios
 
@@ -1134,21 +1227,23 @@ The normal retry control is disabled after a failure although no shutdown call r
 
 2. Native WSL command failure before interrupt is delivered
 
-3. GUI process gone but backend/port/ownership checks still prevent completed shutdown
+3. GUI process, health, readiness and backend checks gone while one expected port remains open; monitor stays visible and retry remains available
 
-4. Successful first shutdown
+4. GUI process, health, readiness, backend and port checks gone while ownership record remains; monitor stays visible and retry remains available
 
-5. Failure followed by a successful retry
+5. Successful first shutdown
 
-6. Failure followed by spontaneous runtime exit
+6. Failure followed by a successful retry
 
-7. User double-clicks End / overlapping UI events
+7. Failure followed by spontaneous runtime exit
 
-8. Existing startup, ready/unready and monitor exit cases in -SelfCheck
+8. User double-clicks End / overlapping UI events
+
+9. Existing startup, ready/unready and monitor exit cases in -SelfCheck
 
 #### Risks
 
-1. StopRequested also participates in Should-ExitMonitor, so changing its lifecycle can affect monitor exit timing; inspect both uses.
+1. StopRequested also participates in Should-ExitMonitor, so changing its lifecycle can affect monitor exit timing; track failure state separately and test both exit paths.
 
 2. A simplistic state reset can replace Needs attention with Running on the next poll despite unresolved shutdown verification; preserve error visibility intentionally.
 
@@ -1184,7 +1279,7 @@ The catch leaves StopRequested true; the next running tick calls Get-TrayState w
 
 2. Invoke End and advance the timer handler at least once.
 
-3. Observe the original code's Needs attention -> Stopping transition and disabled End; no actual WSL processes or containers should be stopped by this fixture.
+3. Observe the original code's Needs attention -> Stopping transition and disabled End while running checks stay true. In separate mocked cases, make only a port remain and only the ownership record remain after health/readiness/backend/process checks turn false; the original timer closes the tray. No actual WSL processes or containers should be stopped by these fixtures.
 
 ##### Proposed native command
 
@@ -1397,7 +1492,7 @@ Only after inspecting the current checkout and its tests
 ##### Command
 
 ```
-wsl.exe -d Ubuntu-24.04 -- /home/william/.local/state/zipvoice/host-envs/current/bin/python -B -m unittest discover
+Use the WSL application test template under "WSL application test prerequisites". Fill ZIPVOICE_REPO, ZIPVOICE_PYTHON, ZIPVOICE_TEST_START and ZIPVOICE_TEST_TOP only after inspecting the actual deployment; the template passes explicit start_dir/top_level_dir values and fails if it collects zero cases.
 ```
 
 ##### Status
@@ -1406,7 +1501,7 @@ NOT RUN
 
 ##### Caveat
 
-This command is recorded in launcher README; actual environment path, suite contents and output effects remain unverified. Do not treat it as a test that ran.
+This is a proposed test command, NOT RUN. The application checkout, interpreter and suite layout have not been verified here. The README's bare discovery command is insufficient by itself: its absolute interpreter path does not choose a checkout working directory or explicit discovery roots, and zero collected tests can still return success. Use the inspection-gated template above with explicit paths. Do not record a suite pass until the verified checkout collects at least one test case and all collected tests pass.
 
 ### Completion boundary
 
