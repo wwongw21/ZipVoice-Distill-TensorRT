@@ -1,0 +1,675 @@
+{
+  "repository": "wwongw21/ZipVoice-Distill-TensorRT",
+  "branches": [
+    {
+      "name": "main",
+      "sha": "96d641298cfce10ad9af44c4f900c608626868a9"
+    }
+  ],
+  "coverage": [
+    "Entire tracked Windows launcher/tray code; README and historical cleanup/archive records"
+  ],
+  "findings": [
+    {
+      "id": "ZVT-1",
+      "severity": "Medium",
+      "classification": "Strongly supported by source state transition; not reproduced on Windows",
+      "branch": "main",
+      "file": "Voice Tray.ps1",
+      "lines": [
+        266,
+        274,
+        288,
+        290
+      ],
+      "additional_locations": [
+        {
+          "file": "Voice Tray.ps1",
+          "line": 168
+        },
+        {
+          "file": "Voice Tray.ps1",
+          "line": 234
+        }
+      ],
+      "evidence": "End sets script:StopRequested=true. After Stop-Service times out or throws, the catch displays Needs attention but leaves the flag set. If the health/backend/process Running predicate stays true, the next timer tick maps the latched flag to Stopping and disables End. If those checks are false, Should-ExitMonitor can close the tray because StopRequested is true even when an expected port or ownership record remains; the timer exit decision does not include those residual checks.",
+      "impact": "A failed shutdown can leave the tray stuck in Stopping with retry disabled, or close the tray while an expected port or ownership record remains. Both outcomes hide an unresolved shutdown failure and remove the normal retry control.",
+      "recommendation": "Track unresolved shutdown failure separately from stop intent and the active-shutdown guard. Keep the tray visible in Needs attention with End enabled after a failed check. Exit only after a retry verifies the exact GUI process, health/readiness endpoints, expected ports and ownership record are all gone.",
+      "validation": "Static trace of the End catch, timer tick, Get-TrayState, Set-TrayState and Should-ExitMonitor paths. The pinned source confirms both the running-service state and the residual-only exit path. Windows PowerShell/WinForms and the actual WSL deployment were not available for live acceptance.",
+      "disposition": "Act on",
+      "title": "Failed shutdown leaves the tray stuck in Stopping with retry disabled",
+      "source_sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+      "source_url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L266",
+      "trigger": "End is clicked and Stop-Service throws or reaches its failure deadline; the next tick either sees the application still running or sees only a residual expected port/ownership record after health, backend readiness and exact GUI process checks are false."
+    }
+  ],
+  "tests": [
+    "Original source review inspected both executable tracked files at the pinned main commit; no launcher or application runtime source changed.",
+    "Handoff-document validation is recorded under handoff.verification.recorded. Native Windows and WSL acceptance remain NOT RUN."
+  ],
+  "limitations": [
+    "Linux environment cannot execute cmd, Windows PowerShell, WinForms, Docker Desktop or user's Ubuntu-24.04 WSL deployment",
+    "Repository intentionally contains launcher/evidence files only; actual WSL application checkout and its ownership/health contracts are not available",
+    "Historical cleanup reports were treated as records, not evidence of current deployment behavior or permission to delete anything"
+  ],
+  "name": "ZipVoice-Distill-TensorRT",
+  "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+  "branch": "main",
+  "evidence_file": "report.json",
+  "ci_observation": {
+    "repo": "ZipVoice-Distill-TensorRT",
+    "total_count": 0,
+    "runs": []
+  },
+  "inventory": {
+    "repo": "ZipVoice-Distill-TensorRT",
+    "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+    "files": 13,
+    "source_exts": [
+      [
+        ".md",
+        6
+      ],
+      [
+        ".json",
+        4
+      ],
+      [
+        "",
+        1
+      ],
+      [
+        ".cmd",
+        1
+      ],
+      [
+        ".ps1",
+        1
+      ]
+    ],
+    "tests": 0,
+    "ci": []
+  },
+  "handoff": {
+    "schema_version": 1,
+    "repository": "wwongw21/ZipVoice-Distill-TensorRT",
+    "visibility": "public",
+    "status": "HANDOFF ONLY \u2014 FINDING OPEN; REPAIR PROPOSED",
+    "audience": [
+      "Maintainer of the Windows launcher and tray",
+      "Implementation agent adding a narrow failure-state correction",
+      "Windows/WSL release reviewer with access to the actual owned ZipVoice deployment"
+    ],
+    "outcome": "After a failed shutdown, keep the tray honest about the failure and leave a usable retry action, while preserving managed runtime identity, ownership and shutdown checks.",
+    "scope": {
+      "date": "2026-10-22",
+      "review_type": "Read-only review of all tracked launcher/tray source and historical records",
+      "source_refs": [
+        {
+          "branch": "main",
+          "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+          "role": "Current pinned Windows launcher package"
+        }
+      ],
+      "project_changes": "Documentation only: docs/reviews/2026-10-22/HANDOFF.md and report.json. No launcher or application runtime source changed.",
+      "external_writes": "None",
+      "root_review_artifact": "/workspace/review/zipvoice.json",
+      "evidence_boundary": "This repository is a Windows launcher/evidence package. The name does not mean its current tree contains the TensorRT Python application."
+    },
+    "architecture": {
+      "components": [
+        {
+          "name": "Windows entry point",
+          "file": "Start ZipVoice GUI.cmd",
+          "responsibility": "Prepare the WSL host environment; reuse a healthy/already-starting GUI; start Docker Desktop and wait for WSL Docker integration when needed; establish runtime ownership through bootstrap; start hidden WSL GUI and tray; poll /health and open dedicated Edge app window.",
+          "sources": [
+            {
+              "file": "Start ZipVoice GUI.cmd",
+              "line": 14,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Start%20ZipVoice%20GUI.cmd#L14",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Start ZipVoice GUI.cmd"
+            },
+            {
+              "file": "Start ZipVoice GUI.cmd",
+              "line": 23,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Start%20ZipVoice%20GUI.cmd#L23",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Start ZipVoice GUI.cmd"
+            },
+            {
+              "file": "Start ZipVoice GUI.cmd",
+              "line": 69,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Start%20ZipVoice%20GUI.cmd#L69",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Start ZipVoice GUI.cmd"
+            },
+            {
+              "file": "Start ZipVoice GUI.cmd",
+              "line": 84,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Start%20ZipVoice%20GUI.cmd#L84",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Start ZipVoice GUI.cmd"
+            }
+          ]
+        },
+        {
+          "name": "Tray controller and monitor",
+          "file": "Voice Tray.ps1",
+          "responsibility": "Single-instance Windows Forms tray; health/readiness/background polling; open/activate dedicated Edge window; request managed GUI interrupt; verify shutdown completion across process, HTTP, ports and ownership record.",
+          "sources": [
+            {
+              "file": "Voice Tray.ps1",
+              "line": 36,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L36",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+            },
+            {
+              "file": "Voice Tray.ps1",
+              "line": 122,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L122",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+            },
+            {
+              "file": "Voice Tray.ps1",
+              "line": 204,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L204",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+            },
+            {
+              "file": "Voice Tray.ps1",
+              "line": 277,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L277",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+            }
+          ]
+        },
+        {
+          "name": "Readiness and ownership contracts",
+          "responsibility": "GUI liveness at 127.0.0.1:8020/health; readiness at /ready; backend check at 8010/v2/health/ready; exact GUI process pattern; shutdown checks ports 8010/8011/8012/8020 and runtime-ownership.json removal.",
+          "sources": [
+            {
+              "file": "Voice Tray.ps1",
+              "line": 7,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L7",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+            },
+            {
+              "file": "Voice Tray.ps1",
+              "line": 36,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L36",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+            },
+            {
+              "file": "Voice Tray.ps1",
+              "line": 57,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L57",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+            },
+            {
+              "file": "Voice Tray.ps1",
+              "line": 82,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L82",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+            },
+            {
+              "file": "Voice Tray.ps1",
+              "line": 140,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L140",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+            }
+          ]
+        },
+        {
+          "name": "Runtime application outside this tree",
+          "responsibility": "zipvoice_bootstrap.py prepare/exec/adoption and zipvoice_gui.py in historical WSL location. Actual implementation and current checkout are unavailable in this review.",
+          "sources": [
+            {
+              "file": "README.md",
+              "line": 3,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/README.md#L3",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/README.md"
+            },
+            {
+              "file": "README.md",
+              "line": 13,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/README.md#L13",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/README.md"
+            },
+            {
+              "file": "Start ZipVoice GUI.cmd",
+              "line": 15,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Start%20ZipVoice%20GUI.cmd#L15",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Start ZipVoice GUI.cmd"
+            },
+            {
+              "file": "Start ZipVoice GUI.cmd",
+              "line": 76,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Start%20ZipVoice%20GUI.cmd#L76",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Start ZipVoice GUI.cmd"
+            }
+          ]
+        },
+        {
+          "name": "Historical cleanup and archive evidence",
+          "files": [
+            "CLEANUP_REPORT.md",
+            "cleanup/*",
+            "docs/history/ARCHIVE_SUMMARY.md"
+          ],
+          "responsibility": "Record prior inventory/deletion/quarantine outcomes. These do not execute cleanup and do not prove present data/runtime state.",
+          "sources": [
+            {
+              "file": "README.md",
+              "line": 35,
+              "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+              "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/README.md#L35",
+              "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/README.md"
+            }
+          ]
+        }
+      ],
+      "control_flow": [
+        "User launches CMD -> WSL bootstrap prepare -> reuse existing health/process or prepare Docker/WSL -> establish ownership lease if missing -> launch bootstrap exec -> start tray -> poll /health -> open Edge",
+        "Tray timer -> test GUI health/readiness and backend/process -> derive Starting/Running/Needs attention/Stopping -> update actions",
+        "End -> set StopRequested -> Stop-Service -> interrupt exact managed GUI -> close managed Edge -> verify process/health/ports/ownership gone. A failed check shows an error; the current timer can still close the tray on its next tick if its health/backend/process Running predicate is false, even when a port or ownership record remains."
+      ],
+      "state_ownership": [
+        {
+          "state": "ShutdownInProgress",
+          "owner": "Stop-Service",
+          "meaning": "Reentrancy guard for an actively executing shutdown; reset in finally."
+        },
+        {
+          "state": "StopRequested",
+          "owner": "End click handler and monitor",
+          "meaning": "Latched intent used by exit policy and currently passed as if shutdown were still in progress; not reset on failure."
+        },
+        {
+          "state": "SeenRunning",
+          "owner": "Timer",
+          "meaning": "Tracks whether monitor has observed a live GUI/backend before deciding to exit."
+        },
+        {
+          "state": "StartupDeadline",
+          "owner": "Tray initialization",
+          "meaning": "Seven-minute boundary for a never-started monitor."
+        }
+      ],
+      "public_commands": [
+        {
+          "purpose": "Launch",
+          "command": "cmd.exe /d /c \".\\Start ZipVoice GUI.cmd\""
+        },
+        {
+          "purpose": "Tray self-check",
+          "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \".\\Voice Tray.ps1\" -SelfCheck"
+        },
+        {
+          "purpose": "Managed stop",
+          "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \".\\Voice Tray.ps1\" -StopOnly"
+        }
+      ]
+    },
+    "deployment_ownership": {
+      "known": [
+        "Launcher source pins the WSL distribution name Ubuntu-24.04 and historical path /home/william/tts/ZipVoice.",
+        "Launcher calls zipvoice_bootstrap.py to prepare/exec/adopt runtime and expects a GUI health service at port 8020.",
+        "The actual WSL runtime source/check-out was not supplied in this repository. Its compatibility and ownership contract remain unverified.",
+        "Use the launcher documentation and readiness checks to identify the actual runtime checkout before integration testing; no compatibility with another implementation is established."
+      ],
+      "unverified": [
+        "Live WSL checkout, remote, commit, local changes and presence/version of bootstrap/GUI",
+        "Actual container/image and runtime ownership record contents/validation behavior",
+        "Current model/engine builds, Docker Desktop/WSL integration and installed Windows Edge/PowerShell behavior",
+        "Active WSL Python environment and actual unittest suite/import layout"
+      ],
+      "next_read_only_inventory": [
+        {
+          "command": "wsl.exe -d Ubuntu-24.04 -- git -C /home/william/tts/ZipVoice branch --show-current",
+          "status": "NOT RUN"
+        },
+        {
+          "command": "wsl.exe -d Ubuntu-24.04 -- git -C /home/william/tts/ZipVoice rev-parse HEAD",
+          "status": "NOT RUN"
+        },
+        {
+          "command": "wsl.exe -d Ubuntu-24.04 -- git -C /home/william/tts/ZipVoice status --short",
+          "status": "NOT RUN"
+        },
+        {
+          "command": "wsl.exe -d Ubuntu-24.04 -- test -f /home/william/tts/ZipVoice/zipvoice_bootstrap.py",
+          "status": "NOT RUN"
+        },
+        {
+          "command": "wsl.exe -d Ubuntu-24.04 -- test -f /home/william/tts/ZipVoice/zipvoice_gui.py",
+          "status": "NOT RUN"
+        },
+        {
+          "command": "curl.exe --connect-timeout 1 --max-time 1 -fsS http://127.0.0.1:8020/health",
+          "status": "NOT RUN; liveness response alone does not establish application identity/ownership"
+        }
+      ],
+      "instructions": "Read inventory before relating proposed launcher fixes to a deployed backend. Preserve unrelated processes, containers, models, voices, databases and generated audio. Historical cleanup manifests do not authorize new deletion or cleanup."
+    },
+    "mitigations": [
+      {
+        "finding": "ZVT-1",
+        "proposal": "If the tray's End action remains disabled after a visible shutdown error, use the documented -StopOnly command only against the verified owned runtime to retry the normal managed shutdown path; inspect its error if it fails. This is an operational option, not an action taken in this review.",
+        "status": "PROPOSED; NOT RUN"
+      },
+      {
+        "finding": "ZVT-1",
+        "proposal": "Preserve the existing exact process match and ownership checks. Do not work around the UI bug by adding broad pkill patterns or unverified named-container stop/remove calls.",
+        "status": "PROPOSED"
+      },
+      {
+        "gap": "Unavailable WSL application",
+        "proposal": "Obtain the actual runtime checkout inventory and source before further runtime diagnosis; do not substitute an unrelated implementation without confirming compatibility.",
+        "status": "PROPOSED"
+      }
+    ],
+    "prioritized_sequence": [
+      {
+        "order": 1,
+        "work": "Identify the actual Windows/WSL deployment and ownership contracts.",
+        "dependencies": [],
+        "reason": "Runtime GUI/bootstrap source is outside the reviewed trees; avoid patching or testing a presumed backend.",
+        "completion": "Record launcher SHA plus WSL branch/SHA/status and confirm exact bootstrap/GUI paths."
+      },
+      {
+        "order": 2,
+        "work": "Add a dependency-light failure-state regression seam in the tray self-check/tests.",
+        "dependencies": [],
+        "reason": "Current built-in -SelfCheck covers pure state helpers but does not exercise a failed End handler followed by a timer tick.",
+        "completion": "Mock shutdown failure and running-state observation without stopping actual services; reproduce Stopping/disabled End after the catch."
+      },
+      {
+        "order": 3,
+        "work": "Implement ZVT-1 by separating failed stop intent from an actively running shutdown.",
+        "dependencies": [
+          "Regression seam"
+        ],
+        "reason": "The latched StopRequested flag currently suppresses future retry despite ShutdownInProgress being false.",
+        "completion": "Failed stop shows Needs attention and keeps End enabled through later ticks; successful stop and reentrancy behavior remain correct."
+      },
+      {
+        "order": 4,
+        "work": "Run Windows self-check and isolated live WSL lifecycle checks.",
+        "dependencies": [
+          "Narrow source change",
+          "Verified test deployment"
+        ],
+        "reason": "Source state tracing cannot prove PowerShell/WinForms event behavior or real shutdown/ownership reconciliation.",
+        "completion": "Record native results and final source SHA; keep any unavailable check explicitly NOT RUN."
+      }
+    ],
+    "findings": [
+      {
+        "id": "ZVT-1",
+        "title": "Failed shutdown leaves the tray in a persistent Stopping state with End disabled",
+        "severity": "Medium",
+        "status": "OPEN",
+        "repair_status": "PROPOSED",
+        "classification": "Strongly supported by source state transition; no live Windows reproduction",
+        "source_refs": [
+          {
+            "file": "Voice Tray.ps1",
+            "line": 266,
+            "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+            "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L266",
+            "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+          },
+          {
+            "file": "Voice Tray.ps1",
+            "line": 288,
+            "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+            "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L288",
+            "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+          },
+          {
+            "file": "Voice Tray.ps1",
+            "line": 166,
+            "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+            "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L166",
+            "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+          },
+          {
+            "file": "Voice Tray.ps1",
+            "line": 229,
+            "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+            "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L229",
+            "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+          },
+          {
+            "file": "Voice Tray.ps1",
+            "line": 155,
+            "sha": "96d641298cfce10ad9af44c4f900c608626868a9",
+            "url": "https://github.com/wwongw21/ZipVoice-Distill-TensorRT/blob/96d641298cfce10ad9af44c4f900c608626868a9/Voice%20Tray.ps1#L155",
+            "local_snapshot": "/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1"
+          }
+        ],
+        "trigger": "End is clicked and Stop-Service throws or reaches its failure deadline; the next tick either sees the application still running or sees only a residual expected port/ownership record after health, backend readiness and exact GUI process checks are false.",
+        "evidence": "End sets script:StopRequested=true. After Stop-Service times out or throws, the catch displays Needs attention but leaves the flag set. If the health/backend/process Running predicate stays true, the next timer tick maps the latched flag to Stopping and disables End. If those checks are false, Should-ExitMonitor can close the tray because StopRequested is true even when an expected port or ownership record remains; the timer exit decision does not include those residual checks.",
+        "source_derived_transition": [
+          {
+            "step": "Before click",
+            "StopRequested": false,
+            "ShutdownInProgress": false,
+            "state": "Running or Needs attention",
+            "End_enabled": true
+          },
+          {
+            "step": "End handler begins",
+            "StopRequested": true,
+            "ShutdownInProgress": "true while Stop-Service executes",
+            "state": "Stopping",
+            "End_enabled": false
+          },
+          {
+            "step": "Stop-Service fails; finally/catch finish",
+            "StopRequested": true,
+            "ShutdownInProgress": false,
+            "state": "Needs attention",
+            "End_enabled": true
+          },
+          {
+            "step": "Next timer tick sees running service",
+            "StopRequested": true,
+            "ShutdownInProgress": false,
+            "state": "Stopping",
+            "End_enabled": false
+          },
+          {
+            "step": "Timer tick after failed Stop-Service sees only an expected open port or the ownership record; health, readiness, backend readiness and exact GUI process checks are false",
+            "StopRequested": true,
+            "ShutdownInProgress": false,
+            "Running": false,
+            "shutdown_checks_passed": false,
+            "current_result": "Should-ExitMonitor returns true and the tray closes",
+            "required_result": "Needs attention remains visible; End stays enabled; shutdown is not reported complete"
+          }
+        ],
+        "impact": "A failed shutdown can leave the tray stuck in Stopping with retry disabled, or close the tray while an expected port or ownership record remains. Both outcomes hide an unresolved shutdown failure and remove the normal retry control.",
+        "change_surface": [
+          "Voice Tray.ps1: End click handler, persistent error/intent state, timer Get-TrayState input and Set-TrayState action policy",
+          "Voice Tray.ps1 -SelfCheck or a separate Windows test harness for failure->tick->retry; keep tests local and mocked"
+        ],
+        "repair_steps": [
+          "Define separate state for requested stop, active shutdown and unresolved failed shutdown. Do not use a latched stop intent as the active-operation indicator.",
+          "On failed Stop-Service, reset active/requested state as needed for retry and retain the error state.",
+          "Keep the next timer tick actionable while the runtime still runs; allow another End action when ShutdownInProgress is false.",
+          "Keep unresolved shutdown failure separate from StopRequested and ShutdownInProgress. Do not close the monitor just because health/backend/process checks are false while expected ports or the ownership record remain.",
+          "After retry, close the monitor only when exact GUI process, health/readiness endpoints, all expected ports and the ownership record are gone. Preserve the never-started monitor timeout.",
+          "Test the same mocked timer path for a running service, a port-only residue and an ownership-record-only residue; then test a successful retry.",
+          "Validate the narrow change on Windows PowerShell/WinForms, then on an isolated verified owned WSL deployment."
+        ],
+        "invariants": [
+          "End is disabled only while an actual shutdown is in progress, not indefinitely after an error.",
+          "A failed stop remains visible and actionable through later timer ticks, including when only an expected port or the ownership record remains.",
+          "Two concurrent stop operations are not started.",
+          "A failed stop does not close the monitor while any expected shutdown check remains. A successful shutdown verifies the exact process, health/readiness, ports and ownership lease removal before reporting completion and closing the monitor.",
+          "Tray controls stop only the managed GUI/application path; do not introduce broad process termination or named-container stops.",
+          "Closing/reopening the dedicated Edge app does not target unrelated browser profiles."
+        ],
+        "acceptance": [
+          "Mock Stop-Service failure with health/background still running: immediately after catch and after at least two timer ticks, the tray remains visible in Needs attention and End remains enabled.",
+          "Mock a residual-port-only failure: health, readiness, backend readiness and exact GUI process are false; one expected port (test each expected port in turn) remains open and all other shutdown checks pass. After the catch and at least two timer ticks, the tray remains visible in Needs attention, End stays enabled and shutdown is not reported complete.",
+          "Mock an ownership-record-only failure: health, readiness, backend readiness and exact GUI process are false; all expected ports are closed but the ownership record remains. After the catch and at least two timer ticks, the tray remains visible in Needs attention, End stays enabled and shutdown is not reported complete.",
+          "A second End click invokes Stop-Service again. If all process, endpoint, port and ownership checks pass, the monitor exits; if any residual check still fails, it stays visible and reports the remaining check.",
+          "While fake Stop-Service is in progress, End remains disabled and duplicate invocation is rejected.",
+          "The existing never-started startup timeout, health-but-unready state and successful-stop exit behavior still pass.",
+          "An error balloon/message explains the failure without being contradicted by a permanently spinning Stopping label or a monitor that closes with residual resources."
+        ],
+        "regression_scenarios": [
+          "Shutdown timeout while GUI health stays 200",
+          "Native WSL command failure before interrupt is delivered",
+          "GUI process, health, readiness and backend checks gone while one expected port remains open; monitor stays visible and retry remains available",
+          "GUI process, health, readiness, backend and port checks gone while ownership record remains; monitor stays visible and retry remains available",
+          "Successful first shutdown",
+          "Failure followed by a successful retry",
+          "Failure followed by spontaneous runtime exit",
+          "User double-clicks End / overlapping UI events",
+          "Existing startup, ready/unready and monitor exit cases in -SelfCheck"
+        ],
+        "risks": [
+          "StopRequested also participates in Should-ExitMonitor, so changing its lifecycle can affect monitor exit timing; track failure state separately and test both exit paths.",
+          "A simplistic state reset can replace Needs attention with Running on the next poll despite unresolved shutdown verification; preserve error visibility intentionally.",
+          "Live stop/retry tests act on a real runtime; use a verified disposable owned instance and avoid unrelated containers or user data."
+        ],
+        "rollback": "Revert only the tray state correction if native lifecycle behavior regresses. Retain normal -StopOnly as the documented managed control where ownership is verified; preserve all user/deployment data.",
+        "reproduction": {
+          "status": "SOURCE TRACE ONLY \u2014 LIVE REPRODUCTION NOT RUN",
+          "prerequisites_for_source_review": [
+            "Pinned Voice Tray.ps1 at 96d641298cfce10ad9af44c4f900c608626868a9"
+          ],
+          "recorded_read_command": "nl -ba '/workspace/repos/ZipVoice-Distill-TensorRT/Voice Tray.ps1' | sed -n '155,175p;260,300p'",
+          "recorded_result": "The catch leaves StopRequested true; the next running tick calls Get-TrayState with true, obtaining Stopping and disabling End via Set-TrayState.",
+          "native_reproduction_procedure": [
+            "On Windows, run the tray in a local test harness whose shutdown call is mocked to throw and whose health/background predicate remains true.",
+            "Invoke End and advance the timer handler at least once.",
+            "Observe the original code's Needs attention -> Stopping transition and disabled End while running checks stay true. In separate mocked cases, make only a port remain and only the ownership record remain after health/readiness/backend/process checks turn false; the original timer closes the tray. No actual WSL processes or containers should be stopped by these fixtures."
+          ],
+          "proposed_native_command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \".\\Voice Tray.ps1\" -SelfCheck",
+          "native_command_caveat": "Current -SelfCheck does not contain the End-failure/timer fixture; extend it or run an explicit test harness before claiming this regression is tested.",
+          "live_runtime_steps": "Only after source/state tests pass and deployment identity is established, validate a controlled failed shutdown and successful retry on an isolated owned WSL instance.",
+          "limits": "Neither powershell.exe/pwsh nor WinForms, cmd.exe, Docker Desktop or the user's WSL runtime were available here."
+        },
+        "acceptance_status": "PROPOSED; NOT RUN"
+      }
+    ],
+    "verification": {
+      "recorded": [
+        {
+          "name": "Source inventory",
+          "status": "RAN BEFORE HANDOFF",
+          "result": "Reviewed the complete two executable tracked files, Start ZipVoice GUI.cmd and Voice Tray.ps1, at the pinned main commit."
+        },
+        {
+          "name": "Repository status",
+          "command": "git -C /workspace/repos/ZipVoice-Distill-TensorRT status --short",
+          "status": "RAN BEFORE HANDOFF",
+          "result": "Empty output; no tracked project edits."
+        },
+        {
+          "name": "Readme/runtime relationship",
+          "status": "RAN BEFORE HANDOFF",
+          "result": "README identifies this repository as a launcher package. The runtime source named by the launcher is not included here; integration compatibility remains unverified."
+        },
+        {
+          "name": "Handoff documentation checks",
+          "command": "Portable docs validation: parse report.json; check handoff/JSON consistency and pinned source trace; compile the embedded unittest template and verify zero-case failure plus one-case success with a synthetic fixture; run git diff --check.",
+          "status": "RAN DURING DOCUMENTATION UPDATE",
+          "result": "PASS. Both handoff artifacts agree on proposed acceptance and NOT RUN status; report JSON parses; the residual-exit trace matches the pinned source; the template rejects zero collected tests and passes a synthetic one-case fixture; only HANDOFF.md and report.json changed. This did not run the application suite or native Windows/WSL acceptance, which remain NOT RUN."
+        }
+      ],
+      "native_checks_not_run": [
+        {
+          "name": "Built-in tray self-check",
+          "environment": "Windows PowerShell with cmd.exe and Windows Forms available",
+          "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \".\\Voice Tray.ps1\" -SelfCheck",
+          "status": "NOT RUN",
+          "expected_after_repair": "Existing helper/native-stderr guards plus added shutdown-failure/retry state test pass."
+        },
+        {
+          "name": "Windows launch smoke",
+          "environment": "Actual Windows host with verified Ubuntu-24.04 checkout, Docker Desktop integration, Edge and models/runtime prerequisites",
+          "command": "cmd.exe /d /c \".\\Start ZipVoice GUI.cmd\"",
+          "status": "NOT RUN",
+          "expected_after_repair": "One managed GUI process and one tray; health and readiness correctly represented; reuse path does not duplicate instances."
+        },
+        {
+          "name": "GUI liveness/readiness probes",
+          "environment": "Actual verified test host",
+          "commands": [
+            "curl.exe --connect-timeout 1 --max-time 1 -fsS http://127.0.0.1:8020/health",
+            "curl.exe --connect-timeout 1 --max-time 1 -fsS http://127.0.0.1:8020/ready"
+          ],
+          "status": "NOT RUN",
+          "expected_after_repair": "Statuses match tray state; liveness alone is not treated as readiness/ownership proof."
+        },
+        {
+          "name": "Managed stop smoke",
+          "environment": "Verified disposable owned WSL runtime, with work saved and no unrelated services targeted",
+          "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \".\\Voice Tray.ps1\" -StopOnly",
+          "status": "NOT RUN",
+          "expected_after_repair": "Normal shutdown confirms exact GUI gone, expected endpoints/ports closed and ownership record gone; failure reports remaining checks clearly."
+        },
+        {
+          "name": "Controlled failed End -> timer ticks -> retry",
+          "environment": "Windows Forms test harness first; isolated WSL deployment second",
+          "command": "No ready-made command currently exists for the mocked End-failure fixture; implementation must add and document it before execution.",
+          "status": "NOT RUN",
+          "expected_after_repair": "Needs attention remains visible with End enabled after failure, including port-only and ownership-record-only residue; a later retry exits only after every shutdown check passes. No broad pkill/container-stop workaround."
+        },
+        {
+          "name": "WSL application test suite",
+          "environment": "Only after the actual WSL checkout identity, current branch/SHA/worktree status, expected bootstrap/GUI files, active Python interpreter and unittest layout have been inspected.",
+          "status": "NOT RUN",
+          "command_template": "Use the inspection-gated template under 'WSL application test prerequisites' in HANDOFF.md. It changes to ZIPVOICE_REPO, passes explicit absolute ZIPVOICE_TEST_START and ZIPVOICE_TEST_TOP paths to unittest discovery, and exits with an error when zero cases are collected.",
+          "historical_readme_command": "The README records an absolute interpreter invocation followed by -B -m unittest discover; that command is historical evidence only and is insufficient as an acceptance command.",
+          "prerequisites": [
+            "Confirm the actual checkout root and sanitized project/remote identity, branch, commit, worktree state and required bootstrap/GUI files on the deployment host.",
+            "Confirm the selected Python interpreter exists, is executable and belongs to the active deployment environment.",
+            "Inspect actual test modules and imports, then set absolute TEST_START and TEST_TOP directories inside the verified checkout. Do not guess a suite path or rely on the shell's starting directory.",
+            "Collect at least one unittest case; zero cases must fail the command rather than count as a pass."
+          ],
+          "expected_after_repair": "The intended suite is discovered from explicit directories, at least one test case is collected and all collected tests pass.",
+          "caveat": "The actual private WSL runtime checkout, interpreter and suite layout were not identified or inspected here. Do not infer them from paths recorded by the launcher or README."
+        }
+      ],
+      "completion_boundary": "Finding remains OPEN. Acceptance criteria are proposed and NOT RUN. This handoff does not claim a native reproduction, runtime fix, identified WSL deployment, tested application suite or release approval."
+    },
+    "limitations": [
+      "Linux workspace cannot validate Windows PowerShell/WinForms event scheduling, process matching, Edge activation or WSL/Docker Desktop integration.",
+      "Actual runtime GUI/bootstrap/ownership implementation was not supplied in this repository; lifecycle compatibility remains unverified.",
+      "Historical cleanup records were reviewed as records only; no cleanup or deletion was attempted.",
+      "The source-supported failure-state finding is narrower than a complete release qualification; all native checks remain NOT RUN.",
+      "The actual WSL application checkout, active interpreter and test layout were not inspected; application-suite testing remains NOT RUN."
+    ]
+  },
+  "handoff_date": "2026-10-22",
+  "all_findings_status": "OPEN",
+  "implementation_status": "No runtime repairs applied; the handoff documentation alone was clarified.",
+  "delivery_notes": {
+    "destination_repository": "wwongw21/ZipVoice-Distill-TensorRT",
+    "status": "All runtime findings remain OPEN; documentation-only review clarifications.",
+    "portable_evidence": "This JSON retains the complete repository-specific handoff. Historical workspace paths are evidence references and prerequisites, not portable hyperlinks. The WSL test template requires the actual checkout and suite layout to be verified before use.",
+    "diagnostics_included": [],
+    "not_included": "Original environments, model weights, user data and complete source snapshots are not included. Clone the pinned source and follow the recorded prerequisites. Bug-demonstration scripts intentionally assert pre-fix behavior; they are not a post-fix passing suite.",
+    "public_scope": "Only public launcher-repository evidence is included. Separate runtime source details and cross-repository diagnostics are excluded."
+  }
+}
