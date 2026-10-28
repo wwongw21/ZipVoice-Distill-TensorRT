@@ -1,13 +1,13 @@
 # ZipVoice Windows Launcher Package
 
-## October 28 reconciliation candidate
+## October 28 integrated main
 
 This separate working copy combines local Windows launcher revision `fd532cf`
 with cloud `main` revision `0da1c2a`, and retains the current local icon,
-shortcut, documentation and test changes. Both saved revisions remain named
-under `refs/preserved/`. A merge commit preserves both histories, and the
-reconciled source is published on `codex/reconcile-local-cloud-20261028`.
-The original cloud `main` branch remains unchanged.
+shortcut, documentation and test changes. Both saved revisions remain reachable
+in Git history. The reconciled source is committed on local and cloud main;
+the reconciliation and pre-finalization preservation branches retain earlier
+versions.
 
 The tray keeps the local bounded shutdown probes and managed-process identity,
 alongside the cloud event handlers and verified shutdown result. The two
@@ -16,23 +16,24 @@ The launcher tests import only top-level production functions so the
 self-check's nested mocks cannot replace them.
 
 The 21 isolated launcher checks and the full tray self-check pass in this
-working copy. Live WSL, Docker, browser, audio-generation and restart workflows
-have not been run. This folder contains the Windows launcher package; the WSL
-application and its model/personal data are separate and remain unchanged.
+working copy. The separate WSL source, GPU inventory, locked model assets and
+dependency-light runtime tests were also checked. Full model generation and
+GUI/lifecycle qualification are separate acceptance checks. This folder is the
+Windows launcher package; its checks do not qualify the Linux runtime.
 
-The complete original Windows folder, including its Git metadata and ignored
-shortcut, is preserved under `.reconciliation/original-snapshot/`. That is a
-same-computer preservation copy, not an off-computer backup. The original
-shortcut is retained there because its absolute target is the original folder;
-generate a new shortcut here with `New ZipVoice Shortcut.ps1`.
+The original Windows folder, including Git metadata and its ignored shortcut,
+is retained in the recovery workspace's preparation and finalization snapshots.
+These local archives are not included in a GitHub clone. They must be copied
+off this computer before a reset. Generate a shortcut for the chosen checkout
+with New ZipVoice Shortcut.ps1; shortcuts contain absolute local targets.
 
 This folder contains the Windows launch and stop controls for the ZipVoice
 application checkout identified in historical project records as:
 
 `<HOME>/tts/ZipVoice` in `Ubuntu-24.04`
 
-The live WSL checkout was not verified in the current review. Confirm its
-branch, commit, and Git status before relying on this path as current.
+The live WSL checkout was inspected during October 28 finalization. Confirm its
+branch, commit and Git status again before relying on a historical source note.
 
 ## Source of truth
 
@@ -96,7 +97,7 @@ Active deployment models, user voices, databases, and user-generated audio
 were excluded when identified as active deployment data. The historical
 manifests also record removal of specific stale Windows copies, generated
 outputs, and Docker objects; eight root-owned cache entries remained
-undeleted. Check each item’s recorded outcome before drawing conclusions about
+undeleted. Check each itemâ€™s recorded outcome before drawing conclusions about
 current files. These records do not authorize new deletions. The one-time
 cleanup result is recorded in
 `cleanup/DELETION_MANIFEST-ONE-TIME-20260819.json`,

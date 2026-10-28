@@ -1551,4 +1551,3 @@ Only public launcher-repository evidence is included. Separate runtime source de
 2. Repository intentionally contains launcher/evidence files only; actual WSL application checkout and its ownership/health contracts are not available
 
 3. Historical cleanup reports were treated as records, not evidence of current deployment behavior or permission to delete anything
-
