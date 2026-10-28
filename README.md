@@ -33,6 +33,37 @@ intended files. No rebuild or copy-to-portable step is required.
 - Isolated launcher tests: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\Launcher.Tests.ps1`
 - WSL tests: `<HOME>/.local/state/zipvoice/host-envs/current/bin/python -B -m unittest discover`
 
+## Application icon and shortcut
+
+The tray uses `assets/zipvoice.ico`: a white Z with cyan sound bars. The icon
+contains 16, 20, 24, 32, 40, 48, 64, 128, and 256 pixel sizes for Windows display
+scaling. Status messages and tray controls work as before.
+
+Create the matching launch shortcut in this folder:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\New ZipVoice Shortcut.ps1"
+```
+
+Open `ZipVoice.lnk` to run the existing `Start ZipVoice GUI.cmd` launcher. To
+place the shortcut elsewhere, pass `-DestinationDirectory` with an existing
+folder. Run the command again after moving the checkout. The generated shortcut
+uses absolute paths and is excluded from Git. An existing shortcut to another
+target is left unchanged.
+
+`assets/zipvoice.svg` and `assets/zipvoice.png` provide the same design in vector
+and image formats. To regenerate all three assets, run
+`python tools/generate_icons.py` with Pillow installed. Pillow is needed only
+for regeneration, not to launch ZipVoice.
+
+The matching ICO and SVG assets are also connected to the browser UI in
+`<HOME>/tts/ZipVoice` in `Ubuntu-24.04`. That application's
+`zipvoice_gui.py` serves `/favicon.ico` and `/favicon.svg` and declares both in
+the page header. This supplies the same identity to browser tabs and the Edge
+app window opened by the launcher. Restart or reload an existing app window to
+pick up the change. Windows window/taskbar rendering has not been checked live.
+This repository has no packaged executable or installer.
+
 ## Data and cleanup
 
 Active deployment models, user voices, databases, and user-generated audio

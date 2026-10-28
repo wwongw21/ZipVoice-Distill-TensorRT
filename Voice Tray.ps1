@@ -6,6 +6,7 @@ $Url = "http://127.0.0.1:8020"
 $EdgeProfile = Join-Path $env:LOCALAPPDATA "ZipVoice\EdgeProfile"
 $ProcessPattern = "^python3 /home/william/tts/ZipVoice/zipvoice_gui[.]py$"
 $Edge = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+$IconPath = Join-Path $PSScriptRoot 'assets\zipvoice.ico'
 
 function Get-HttpStatus {
     param([string]$Target, [int]$TimeoutMilliseconds = 1000)
@@ -365,7 +366,10 @@ if ($SelfCheck) {
     if (Test-ManagedEdgeCommandLine "msedge.exe --user-data-dir=`"$($EdgeProfile)2`" --user-data-dir=`"$EdgeProfile`"") { throw "managed-last duplicate Edge profile switches must not match" }
     if (Select-String -Path $MyInvocation.MyCommand.Path -Pattern 'docker(\.exe)?\s+stop' -Quiet) { throw "tray must not issue a named-container stop" }
     Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
     if (-not [System.Windows.Forms.NotifyIcon]) { throw "NotifyIcon unavailable" }
+    $applicationIcon = [System.Drawing.Icon]::new($IconPath, [System.Windows.Forms.SystemInformation]::SmallIconSize)
+    $applicationIcon.Dispose()
     Write-Host "$Name tray self-check passed"
     exit 0
 }
@@ -400,9 +404,10 @@ $statusItem.Enabled = $false
 $openItem = $menu.Items.Add("Open $Name")
 $openItem.Enabled = $false
 $endItem = $menu.Items.Add("End $Name")
+$applicationIcon = [System.Drawing.Icon]::new($IconPath, [System.Windows.Forms.SystemInformation]::SmallIconSize)
 $icon = [System.Windows.Forms.NotifyIcon]::new()
 $icon.ContextMenuStrip = $menu
-$icon.Icon = [System.Drawing.SystemIcons]::Information
+$icon.Icon = $applicationIcon
 $icon.Text = "$Name - Starting"
 $icon.Visible = $true
 
@@ -420,6 +425,7 @@ function Close-Tray {
     $timer.Stop()
     $icon.Visible = $false
     $icon.Dispose()
+    $applicationIcon.Dispose()
     $menu.Dispose()
     [System.Windows.Forms.Application]::ExitThread()
 }
