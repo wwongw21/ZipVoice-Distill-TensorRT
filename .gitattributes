@@ -1,3 +1,4 @@
 # This Windows launcher package preserves the reviewed file bytes.
 # Keep mixed historical LF/CRLF records and packaging fingerprints stable.
 * -text
+* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
