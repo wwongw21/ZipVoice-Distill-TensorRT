@@ -6,7 +6,7 @@ $parseErrors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile($trayPath, [ref]$null, [ref]$parseErrors)
 if ($parseErrors.Count) { throw 'Tray PowerShell syntax failed' }
 # Import functions only: no tray, WSL, Docker, Edge, or application startup.
-$ast.FindAll({ param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] }, $true) |
+$ast.FindAll({ param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Parent -eq $ast.EndBlock }, $true) |
     ForEach-Object { Invoke-Expression $_.Extent.Text }
 $Name = 'ZipVoice'
 $Url = 'http://127.0.0.1:8020'
@@ -208,7 +208,7 @@ try {
         function Stop-Service { throw 'mock shutdown failure' }
         Request-ServiceStop
         Assert-True ($script:ShutdownFailed -and -not $script:StopRequested -and $script:lastState -eq 'Needs attention') 'Failed stop did not allow retry'
-        function Stop-Service { }
+        function Stop-Service { return $true }
         Request-ServiceStop
         Assert-True (-not $script:ShutdownFailed -and $script:StopRequested -and $script:lastState -eq 'Stopping') 'Retry retained its previous failure'
     }
@@ -234,7 +234,7 @@ try {
         Assert-True ($script:capturedEdgeArguments[1] -eq $argument) 'Open window did not use the quoted argument'
     }
     Check 'All PowerShell sources, inline commands, and cleanup JSON parse' {
-        foreach ($file in @($trayPath, $PSCommandPath)) {
+        foreach ($file in @($trayPath, $PSCommandPath, (Join-Path $root 'New ZipVoice Shortcut.ps1'))) {
             $errors = $null
             [Management.Automation.Language.Parser]::ParseFile($file, [ref]$null, [ref]$errors) | Out-Null
             Assert-True ($errors.Count -eq 0) "Syntax errors in $file"
@@ -248,6 +248,71 @@ try {
         }
         Get-ChildItem -LiteralPath (Join-Path $root 'cleanup') -Filter '*.json' |
             ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName | ConvertFrom-Json | Out-Null }
+    }
+    Check 'Application icon loads at every Windows display size' {
+        Add-Type -AssemblyName System.Drawing
+        $iconPath = Join-Path $root 'assets\zipvoice.ico'
+        $bytes = [IO.File]::ReadAllBytes($iconPath)
+        $sizes = @(16, 20, 24, 32, 40, 48, 64, 128, 256)
+        Assert-True ([BitConverter]::ToUInt16($bytes, 0) -eq 0 -and
+            [BitConverter]::ToUInt16($bytes, 2) -eq 1 -and
+            [BitConverter]::ToUInt16($bytes, 4) -eq $sizes.Count) 'ICO header or frame count is invalid'
+        for ($i = 0; $i -lt $sizes.Count; $i++) {
+            $offset = 6 + 16 * $i
+            Assert-True ($bytes[$offset] -eq ($sizes[$i] % 256) -and
+                $bytes[$offset + 1] -eq ($sizes[$i] % 256)) 'ICO directory size is incorrect'
+            $length = [BitConverter]::ToUInt32($bytes, $offset + 8)
+            $imageOffset = [BitConverter]::ToUInt32($bytes, $offset + 12)
+            Assert-True ($length -gt 0 -and $imageOffset -ge (6 + 16 * $sizes.Count) -and
+                $imageOffset + $length -le $bytes.Length) 'ICO frame extends outside the file'
+            # Decode each frame separately: .NET's multi-size picker can prefer
+            # 128 pixels even when asked for a valid 256-pixel frame.
+            $singleFrame = [byte[]]::new(22 + $length)
+            [Array]::Copy($bytes, 0, $singleFrame, 0, 6)
+            $singleFrame[4] = 1
+            [Array]::Copy($bytes, $offset, $singleFrame, 6, 16)
+            [Array]::Copy([BitConverter]::GetBytes([uint32]22), 0, $singleFrame, 18, 4)
+            [Array]::Copy($bytes, $imageOffset, $singleFrame, 22, $length)
+            $stream = [IO.MemoryStream]::new($singleFrame)
+            $applicationIcon = $null
+            try {
+                $applicationIcon = [Drawing.Icon]::new($stream, [Drawing.Size]::new($sizes[$i], $sizes[$i]))
+                Assert-True ($applicationIcon.Width -eq $sizes[$i] -and
+                    $applicationIcon.Height -eq $sizes[$i]) "Windows could not load the $($sizes[$i])-pixel icon"
+            } finally {
+                if ($applicationIcon) { $applicationIcon.Dispose() }
+                $stream.Dispose()
+            }
+        }
+        $png = [Drawing.Bitmap]::new((Join-Path $root 'assets\zipvoice.png'))
+        try {
+            Assert-True ($png.Width -eq 256 -and $png.Height -eq 256 -and
+                $png.GetPixel(0, 0).A -eq 0) 'PNG size or transparent corners are invalid'
+        } finally { $png.Dispose() }
+        [xml](Get-Content -Raw -LiteralPath (Join-Path $root 'assets\zipvoice.svg')) | Out-Null
+    }
+    Check 'Branded shortcut targets the real launcher and preserves unrelated shortcuts' {
+        $creator = Join-Path $root 'New ZipVoice Shortcut.ps1'
+        $shortcutPath = & $creator -DestinationDirectory $fixtures
+        $shell = New-Object -ComObject WScript.Shell
+        $shortcut = $null
+        try {
+            $shortcut = $shell.CreateShortcut($shortcutPath)
+            Assert-True ($shortcut.TargetPath -eq (Join-Path $root 'Start ZipVoice GUI.cmd')) 'Shortcut targets a different launcher'
+            Assert-True ($shortcut.WorkingDirectory -eq $root -and $shortcut.Arguments -eq '') 'Shortcut changes launcher behavior'
+            Assert-True ($shortcut.IconLocation -eq ((Join-Path $root 'assets\zipvoice.ico') + ',0')) 'Shortcut does not use the application icon'
+            $updatedPath = & $creator -DestinationDirectory $fixtures
+            Assert-True ($updatedPath -eq $shortcutPath) 'Shortcut update created a different file'
+            $shortcut.TargetPath = Join-Path $env:SystemRoot 'notepad.exe'
+            $shortcut.Save()
+            $before = (Get-FileHash -LiteralPath $shortcutPath).Hash
+            $failed = $false
+            try { & $creator -DestinationDirectory $fixtures | Out-Null } catch { $failed = $true }
+            Assert-True ($failed -and (Get-FileHash -LiteralPath $shortcutPath).Hash -eq $before) 'An unrelated shortcut was replaced'
+        } finally {
+            if ($shortcut) { [Runtime.InteropServices.Marshal]::FinalReleaseComObject($shortcut) | Out-Null }
+            [Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell) | Out-Null
+        }
     }
     Write-Host "Launcher regression checks passed: $script:passed"
 } finally {
