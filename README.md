@@ -5,7 +5,9 @@
 This separate working copy combines local Windows launcher revision `fd532cf`
 with cloud `main` revision `0da1c2a`, and retains the current local icon,
 shortcut, documentation and test changes. Both saved revisions remain named
-under `refs/preserved/`; no merge commit or cloud push was created.
+under `refs/preserved/`. A merge commit preserves both histories, and the
+reconciled source is published on `codex/reconcile-local-cloud-20261028`.
+The original cloud `main` branch remains unchanged.
 
 The tray keeps the local bounded shutdown probes and managed-process identity,
 alongside the cloud event handlers and verified shutdown result. The two
