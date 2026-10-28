@@ -1,0 +1,17 @@
+{
+  "SchemaVersion": 1,
+  "Distro": "Ubuntu-24.04",
+  "AppRoot": "~/.local/state/zipvoice/finalization-validation-20261028/app",
+  "NativePython": "~/.local/state/zipvoice/native-envs/finalization-20261028/bin/python",
+  "HostEnvironmentSource": "~/.local/state/zipvoice/host-envs/current",
+  "StateRoot": "~/.local/state/zipvoice-native-20261028",
+  "JobStateRoot": "~/.local/state/zipvoice-native-20261028/jobs",
+  "OutputRoot": "~/.local/share/zipvoice-native-20261028/outputs",
+  "Port": 8026,
+  "EngineBuildTimeoutSeconds": 7200,
+  "StartupTimeoutSeconds": 7800,
+  "StopTimeoutSeconds": 60,
+  "LaunchBrowser": true,
+  "PruneCompletedJobs": false,
+  "ScratchRoot": "~/.cache/zipvoice-native-20261028/scratch"
+}

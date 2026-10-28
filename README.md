@@ -15,11 +15,7 @@ monitor flags for responding endpoints and an active shutdown are separate.
 The launcher tests import only top-level production functions so the
 self-check's nested mocks cannot replace them.
 
-The 21 isolated launcher checks and the full tray self-check pass in this
-working copy. The separate WSL source, GPU inventory, locked model assets and
-dependency-light runtime tests were also checked. Full model generation and
-GUI/lifecycle qualification are separate acceptance checks. This folder is the
-Windows launcher package; its checks do not qualify the Linux runtime.
+The 21 isolated Docker launcher checks and tray self-check pass. The separate native runtime was qualified with a real TensorRT build, Fast and Quality speech output, cancellation, retry, copied-profile add/delete and normal shutdown. Its Linux suite passes 106 root and 23 runtime checks. WSL is available on this host. Docker Desktop is absent, so the default Docker launcher reports that requirement clearly. Use the explicit native commands below for the separately qualified copied runtime.
 
 The original Windows folder, including Git metadata and its ignored shortcut,
 is retained in the recovery workspace's preparation and finalization snapshots.
@@ -59,6 +55,10 @@ intended files. No rebuild or copy-to-portable step is required.
 - Tray self-check: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\Voice Tray.ps1 -SelfCheck`
 - Isolated launcher tests: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\Launcher.Tests.ps1`
 - WSL tests: `<HOME>/.local/state/zipvoice/host-envs/current/bin/python -B -m unittest discover`
+
+## Separate native commands
+
+Use `Start ZipVoice Native.cmd`, `Native Status.cmd` and `Stop ZipVoice Native.cmd` for the explicit experimental native profile on port 8026. The first start creates a private configuration file; the qualified copied runtime and its model files must be retained. See [README-NATIVE.md](README-NATIVE.md) for locations, limits, dependency versions and safe cancellation.
 
 ## Application icon and shortcut
 
@@ -122,7 +122,7 @@ PowerShell and embedded-command syntax, cleanup JSON parsing, and Git
 whitespace checks. Tests use simulated command results and temporary local
 ports. They do not start WSL, Docker, Edge, or ZipVoice.
 
-**Live testing: not run.** WSL currently reports unavailable virtualization.
+**Historical October 4 live-test status: not run.** WSL reported unavailable virtualization during that audit. The October 28 native qualification above supersedes that host observation.
 Startup, duplicate launch, audio generation, shutdown, and restart therefore
 remain unverified. The Linux application source, model engines, and Docker
 deployment were outside this reconciliation. Committing the Windows launchers

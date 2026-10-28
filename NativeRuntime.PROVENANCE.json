@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "variant": "native-experimental",
+  "python": "3.12.3",
+  "torch": "2.8.0+cu128",
+  "numpy": "1.26.4",
+  "tensorrt": "10.7.0",
+  "vocos": "0.1.0",
+  "distributionCount": 92,
+  "originalDockerLocksChanged": false,
+  "originalEnvironmentsChanged": false,
+  "k2": "optional; documented TorchSwoosh fallback; no faster-performance claim",
+  "integrity": "92installedRECORDs,28505hashedfiles,10476395283bytes,0errors; fullvendorTensorRTwheel SHAverified",
+  "tensorRTVendorWheelSha256": "e7ebe84220a76646adcc12a5e68be016163f37dcd4be81bd48ad78b26dd796f3",
+  "packageLock": "NativeRuntime.dependencies.txt",
+  "persistentRuntime": "~/.local/state/zipvoice/finalization-validation-20261028/app",
+  "profileScope": "Copied qualified runtime and copied voice profiles; not the original voices or user data",
+  "entrypointEndToEndQualified": true,
+  "parentIntegrationRequired": false,
+  "linuxSourceMain": "bae21da638e78ac681106cd365c425756923d5d7",
+  "qualifiedNativePlan": {
+    "sha256": "a1cf95cb30b25aeb8772c6de1e7a0829e7bba00bb64c6e009fa1d0c8e48ca9b6",
+    "bytes": 294598020,
+    "fingerprintDigest": "d29467aee98d3eb5bd32f1cffba483c500c3b07dbe643294a8334a4e8a14d11e",
+    "coreSourceHash": "02c38ff626605ee5dddb1e99bd5da77b1db9024e2f18e0c73761c98bc1314fd8",
+    "builderOptimizationLevel": 5,
+    "batchProfile": [
+      1,
+      2,
+      4
+    ],
+    "sequenceProfile": [
+      100,
+      200,
+      3000
+    ],
+    "priorPlanAndOriginalPlansRetained": true
+  },
+  "realNativeChecks": {
+    "model": "zipvoice_distill",
+    "presets": [
+      "Fast",
+      "Quality"
+    ],
+    "speechWav24kMono16Bit": true,
+    "midSynthesisCancellationAndRetry": true,
+    "copiedProfileAddDelete": true,
+    "originalVoiceFilesVerified": 46,
+    "originalLockedAssetsVerified": 8,
+    "originalCheckpointCopiesVerified": 2,
+    "rootTests": 106,
+    "runtimeTests": 23,
+    "skipped": 0
+  },
+  "windowsEntryPoint": {
+    "startNoBrowserExit": 0,
+    "publicStartCmdExitWhileEdgeAlive": 0,
+    "status": "ready",
+    "publicStopCmdExit": 0,
+    "portsClosed": [
+      18020,
+      8026
+    ],
+    "controllerTests": 19,
+    "windowsSeamTests": 6,
+    "realUiGenerateButton": true,
+    "decodedUiAudioSeconds": 4.630458333333333,
+    "decodedUiAudioFiniteNonzero": true,
+    "observedAtUtc": "2026-10-28T23:21:47.8411677Z"
+  }
+}
